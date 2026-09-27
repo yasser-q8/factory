@@ -1,0 +1,2130 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة المخازن والتصنيع - مصنع التجهيزات الغذائية - الكويت</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for Dashboard Visual Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Tailwind Custom Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#16a34a',
+                            600: '#15803d',
+                            700: '#166534',
+                            800: '#115e59',
+                            900: '#134e4a',
+                        },
+                        accent: {
+                            50: '#fffbebe6',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Cairo', 'Segoe UI', 'Tahoma', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Custom CSS for Scrollbars & Print Layouts -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        /* Custom Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Print CSS optimization */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printableVoucherModal, #printableVoucherModal * {
+                visibility: visible;
+            }
+            #printableVoucherModal {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
+
+    <!-- Header / Navbar -->
+    <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Brand Info -->
+                <div class="flex items-center gap-3">
+                    <button id="mobileMenuBtn" class="md:hidden text-slate-300 hover:text-white p-2 text-xl">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center text-white shadow-md font-bold text-xl">
+                        <i class="fa-solid fa-utensils"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold leading-tight">مصنع التجهيزات الغذائية</h1>
+                        <p class="text-xs text-brand-500 flex items-center gap-1 font-semibold">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
+                            دولة الكويت - قسم التجهيزات المدرسية والمستشفيات
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Clock & Quick System Tools -->
+                <div class="flex items-center gap-4">
+                    <div class="hidden lg:flex flex-col text-left text-xs text-slate-300 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
+                        <span id="liveClock" class="font-bold text-slate-100 font-mono text-sm">--:--:--</span>
+                        <span id="liveDate" class="text-slate-300">--</span>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button onclick="resetToDemoData()" title="إعادة تحميل البيانات التجريبية" class="bg-slate-800 hover:bg-slate-700 text-amber-400 px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-700 flex items-center gap-1.5 transition">
+                            <i class="fa-solid fa-rotate-right"></i>
+                            <span class="hidden sm:inline">بيانات تجريبية</span>
+                        </button>
+                        <div class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-200">
+                            العملة: <span class="text-emerald-400 font-black">د.ك</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <div class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col md:flex-row gap-6">
+
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="w-full md:w-64 bg-white rounded-2xl shadow-sm border border-slate-200/80 p-3 shrink-0 self-start sticky top-20 hidden md:block">
+            <div class="text-xs font-bold text-slate-300 uppercase px-3 py-2">القائمة الرئيسية</div>
+            <nav class="space-y-1" id="navContainer">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-50 transition">
+                    <i class="fa-solid fa-chart-pie text-brand-600 text-lg w-5"></i>
+                    <span>لوحة التحكم</span>
+                </button>
+                <button onclick="switchTab('items')" id="nav-items" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-50 transition">
+                    <i class="fa-solid fa-boxes-stacked text-blue-600 text-lg w-5"></i>
+                    <span>المواد والوجبات</span>
+                </button>
+                <button onclick="switchTab('bom')" id="nav-bom" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-50 transition">
+                    <i class="fa-solid fa-scroll text-amber-600 text-lg w-5"></i>
+                    <span>الوصفات (BOM)</span>
+                </button>
+                <button onclick="switchTab('production')" id="nav-production" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-50 transition">
+                    <i class="fa-solid fa-kitchen-set text-emerald-600 text-lg w-5"></i>
+                    <span>الإنتاج والتحضير</span>
+                </button>
+                <hr class="my-2 border-slate-100">
+                <div class="text-xs font-bold text-slate-300 uppercase px-3 py-1">السندات والحركات</div>
+                <button onclick="switchTab('receipt')" id="nav-receipt" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-50 transition">
+                    <i class="fa-solid fa-truck-ramp-box text-indigo-600 text-lg w-5"></i>
+                    <span>سند استلام مواد</span>
+                </button>
+                <button onclick="switchTab('transfer')" id="nav-transfer" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-50 transition">
+                    <i class="fa-solid fa-right-left text-violet-600 text-lg w-5"></i>
+                    <span>التحويل بين المخازن</span>
+                </button>
+                <button onclick="switchTab('issue')" id="nav-issue" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-50 transition">
+                    <i class="fa-solid fa-paper-plane text-cyan-600 text-lg w-5"></i>
+                    <span>سند الصرف والتوزيع</span>
+                </button>
+                <button onclick="switchTab('waste')" id="nav-waste" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-50 transition">
+                    <i class="fa-solid fa-triangle-exclamation text-rose-600 text-lg w-5"></i>
+                    <span>الإتلاف والتسوية</span>
+                </button>
+                <hr class="my-2 border-slate-100">
+                <button onclick="switchTab('ledger')" id="nav-ledger" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-50 transition">
+                    <i class="fa-solid fa-id-card text-teal-600 text-lg w-5"></i>
+                    <span>كارت الصنف الشامل</span>
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Views Container -->
+        <main class="flex-1 min-w-0">
+
+            <!-- TAB 1: DASHBOARD -->
+            <section id="view-dashboard" class="tab-view space-y-6">
+                <!-- KPI Header Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-slate-500 uppercase">أصناف المواد الخام</p>
+                            <h3 id="statRawCount" class="text-2xl font-black text-slate-800 mt-1">0</h3>
+                            <span class="text-xs font-semibold text-emerald-600 flex items-center gap-1 mt-1">
+                                <i class="fa-solid fa-box text-xs"></i> بالمخازن الرئيسية
+                            </span>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl font-bold">
+                            <i class="fa-solid fa-wheat-awn"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-slate-500 uppercase">الوجبات الجاهزة المعرفة</p>
+                            <h3 id="statMealCount" class="text-2xl font-black text-slate-800 mt-1">0</h3>
+                            <span class="text-xs font-semibold text-emerald-600 flex items-center gap-1 mt-1">
+                                <i class="fa-solid fa-check text-xs"></i> مستشفيات ومدارس
+                            </span>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold">
+                            <i class="fa-solid fa-plate-wheat"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-slate-500 uppercase">تنبيه النفاذ (أقل من الحد)</p>
+                            <h3 id="statLowStockCount" class="text-2xl font-black text-rose-600 mt-1">0</h3>
+                            <span class="text-xs font-semibold text-rose-500 flex items-center gap-1 mt-1">
+                                <i class="fa-solid fa-triangle-exclamation text-xs"></i> تحذير النقص
+                            </span>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-xl font-bold">
+                            <i class="fa-solid fa-bell"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-slate-500 uppercase">إجمالي السندات المسجلة</p>
+                            <h3 id="statVouchersCount" class="text-2xl font-black text-slate-800 mt-1">0</h3>
+                            <span class="text-xs font-semibold text-indigo-600 flex items-center gap-1 mt-1">
+                                <i class="fa-solid fa-receipt text-xs"></i> عمليات النظام
+                            </span>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl font-bold">
+                            <i class="fa-solid fa-file-invoice"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Visual Analytics Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Chart 1: Movement Distribution -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm lg:col-span-2">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                                <i class="fa-solid fa-chart-line text-brand-600"></i>
+                                ملخص حركات المخازن والتصنيع
+                            </h2>
+                            <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-bold">مباشر</span>
+                        </div>
+                        <div class="relative h-64 w-full">
+                            <canvas id="operationsChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Low Stock Alerts Panel -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col">
+                        <div class="flex items-center justify-between mb-3">
+                            <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                                <i class="fa-solid fa-triangle-exclamation text-amber-500"></i>
+                                المواد القريبة من النفاذ
+                            </h2>
+                        </div>
+                        <div id="lowStockList" class="flex-1 overflow-y-auto max-h-64 space-y-2.5 pr-1">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Voucher Stream / Activity Log -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-clock-rotate-left text-indigo-600"></i>
+                            آخر السندات والعمليات المنفذة
+                        </h2>
+                        <button onclick="switchTab('ledger')" class="text-xs text-brand-600 hover:text-brand-700 font-bold">عرض كارت الصنف الكامل &larr;</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-xs">
+                            <thead class="bg-slate-50 text-slate-500 font-bold uppercase border-b border-slate-100">
+                                <tr>
+                                    <th class="p-3">رقم السند</th>
+                                    <th class="p-3">نوع العملية</th>
+                                    <th class="p-3">التاريخ</th>
+                                    <th class="p-3">المصدر / الجهة</th>
+                                    <th class="p-3">عدد البنود</th>
+                                    <th class="p-3">إجمالي التكلفة/المبلغ</th>
+                                    <th class="p-3 text-center">الإجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentVouchersTable" class="divide-y divide-slate-100">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: ITEMS & MEALS MASTER CATALOG -->
+            <section id="view-items" class="tab-view space-y-6 hidden">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800">بطاقة تعريف المواد الخام والوجبات</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">تسجيل أصناف المواد الأولية والوجبات الجاهزة للتوزيع على المستشفيات والمدارس</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="openItemModal('raw')" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm">
+                            <i class="fa-solid fa-plus"></i>
+                            إضافة مادة خام
+                        </button>
+                        <button onclick="openItemModal('meal')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm">
+                            <i class="fa-solid fa-bowl-food"></i>
+                            إضافة وجبة جاهزة
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filters Bar -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-wrap items-center gap-3">
+                    <div class="flex-1 min-w-[200px]">
+                        <input type="text" id="itemSearchInput" onkeyup="renderItemsTable()" placeholder="ابحث باسم المادة، كود الصنف، الفئة..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </div>
+                    <select id="itemFilterType" onchange="renderItemsTable()" class="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-semibold focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                        <option value="ALL">جميع الأنواع (مواد + وجبات)</option>
+                        <option value="raw">مواد خام فقط</option>
+                        <option value="meal">وجبات جاهزة فقط</option>
+                    </select>
+                </div>
+
+                <!-- Items Master Table -->
+                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-xs">
+                            <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3.5">الكود</th>
+                                    <th class="p-3.5">اسم الصنف / الوجبة</th>
+                                    <th class="p-3.5">النوع والتصنيف</th>
+                                    <th class="p-3.5">الوحدة</th>
+                                    <th class="p-3.5">تكلفة الوحدة (د.ك)</th>
+                                    <th class="p-3.5">الرصيد الإجمالي الحكلي</th>
+                                    <th class="p-3.5">الحد الأدنى</th>
+                                    <th class="p-3.5 text-center">العمليات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="itemsMasterTable" class="divide-y divide-slate-100">
+                                <!-- Dynamically populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: RECIPES & BILL OF MATERIALS (BOM) -->
+            <section id="view-bom" class="tab-view space-y-6 hidden">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800">إدارة الوصفات والريسبي (BOM)</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">تحديد المكونات الدقيقة للمادة الخام المطلوبة لإنتاج كل وجبة فردية</p>
+                    </div>
+                    <button onclick="openBomModal()" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-scroll"></i>
+                        إنشاء وصفة وجبة جديدة
+                    </button>
+                </div>
+
+                <div id="bomGridContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Cards populated dynamically -->
+                </div>
+            </section>
+
+            <!-- TAB 4: PRODUCTION & MEAL PREPARATION (AUTO DEDUCT) -->
+            <section id="view-production" class="tab-view space-y-6 hidden">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                    <div class="border-b border-slate-100 pb-4 mb-5">
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-kitchen-set text-emerald-600"></i>
+                            أمر إنتاج وتحضير الوجبات (الخصم الآلي للريسبي)
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-1">عند تأكيد التحضير يتم خصم المواد الخام تلقائياً حسب الوصفة إضافة الوجبات لمخزن الوجبات الجاهزة</p>
+                    </div>
+
+                    <form id="productionForm" onsubmit="handleExecuteProduction(event)" class="space-y-6">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1.5">اختر الوجبة المراد تحضيرها *</label>
+                                <select id="prodMealSelect" onchange="calculateProductionRequirements()" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                    <option value="">-- اختر الوجبة --</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1.5">كمية الوجبات المطلوبة (عدد) *</label>
+                                <input type="number" id="prodQuantity" min="1" value="100" oninput="calculateProductionRequirements()" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1.5">المخزن المستهدف لإضافة الوجبات</label>
+                                <select id="prodTargetWarehouse" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                    <option value="wh3">مخزن الوجبات الجاهزة (الرئيسي)</option>
+                                    <option value="wh4">قسم توزيع المدارس</option>
+                                    <option value="wh5">قسم توزيع المستشفيات</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Raw Materials Availability & Deductions Preview Card -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-xs font-bold text-slate-700">جدول التحقق من توفر المواد الخام المطلوبة للدفعة</h3>
+                                <div class="text-xs font-bold text-slate-600">
+                                    التكلفة الإجمالية التقديرية للدفعة: <span id="prodTotalCostDisplay" class="text-brand-600 text-sm font-black">0.000</span> د.ك
+                                </div>
+                            </div>
+
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-right text-xs">
+                                    <thead class="bg-white text-slate-500 font-bold border-b border-slate-200">
+                                        <tr>
+                                            <th class="p-2.5">المادة الخام</th>
+                                            <th class="p-2.5">الكمية للوجبة الواحدة</th>
+                                            <th class="p-2.5">الإجمالي المطلوب للدفعة</th>
+                                            <th class="p-2.5">الرصيد المتاح بالمطبخ/المخزن</th>
+                                            <th class="p-2.5">الحالة والتأكيد</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="productionIngredientsPreview" class="divide-y divide-slate-200 bg-white">
+                                        <tr>
+                                            <td colspan="5" class="p-4 text-center text-slate-400">يرجى اختيار الوجبة والكمية لإظهار التحليل</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+                            <button type="submit" id="btnExecuteProduction" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold text-xs transition shadow-md flex items-center gap-2">
+                                <i class="fa-solid fa-check-double"></i>
+                                تأكيد التحضير والخصم الآلي من المخزن
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- TAB 5: GOODS RECEIVING VOUCHER -->
+            <section id="view-receipt" class="tab-view space-y-6 hidden">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                    <div class="border-b border-slate-100 pb-4 mb-4 flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800">سند استلام مواد خام (Goods Receipt)</h2>
+                            <p class="text-xs text-slate-500 mt-0.5">تسجيل توريد شحنات المواد الخام من الموردين وتحديث الأرصدة بالمخزن فوراً</p>
+                        </div>
+                        <span class="text-xs font-mono font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg">GRV-NEW</span>
+                    </div>
+
+                    <form id="receiptVoucherForm" onsubmit="handleSaveReceiptVoucher(event)" class="space-y-5">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">المورد *</label>
+                                <input type="text" id="rcptSupplier" required placeholder="مثال: شركة مطاحن الدقيق الكويتية / شركة نايف" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">المخزن المستقبل *</label>
+                                <select id="rcptTargetWarehouse" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                                    <option value="wh1">مخزن المواد الخام الرئيسي</option>
+                                    <option value="wh2">مطبخ التجهيز والطهي</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">تاريخ الاستلام *</label>
+                                <input type="date" id="rcptDate" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Items Table -->
+                        <div class="border border-slate-200 rounded-xl overflow-hidden">
+                            <div class="bg-slate-100 p-3 flex items-center justify-between">
+                                <h3 class="text-xs font-bold text-slate-700">اصناف المواد الاستلام</h3>
+                                <button type="button" onclick="addReceiptRow()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1 rounded-lg transition flex items-center gap-1">
+                                    <i class="fa-solid fa-plus text-[10px]"></i> إضافة بند
+                                </button>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-right text-xs">
+                                    <thead class="bg-slate-50 text-slate-500 font-bold">
+                                        <tr>
+                                            <th class="p-2.5 w-5/12">المادة الخام</th>
+                                            <th class="p-2.5 w-2/12">الكمية</th>
+                                            <th class="p-2.5 w-2/12">سعر الوحدة (د.ك)</th>
+                                            <th class="p-2.5 w-2/12">الإجمالي (د.ك)</th>
+                                            <th class="p-2.5 w-1/12 text-center">إلغاء</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="receiptRowsContainer" class="divide-y divide-slate-200">
+                                        <!-- Rows added dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="bg-slate-50 p-3 border-t border-slate-200 flex justify-between items-center text-xs font-bold">
+                                <span>إجمالي قيمة السند:</span>
+                                <span class="text-base text-brand-600 font-black"><span id="rcptGrandTotal">0.000</span> د.ك</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">ملاحظات أو رقم الفاتورة</label>
+                            <input type="text" id="rcptNotes" placeholder="ملاحظات اختيارية..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs">
+                        </div>
+
+                        <div class="flex justify-end gap-3 pt-2">
+                            <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white px-6 py-2.5 rounded-xl font-bold text-xs transition shadow-md">
+                                حفظ سند الاستلام وترحيل الرصيد
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- TAB 6: WAREHOUSE TRANSFERS -->
+            <section id="view-transfer" class="tab-view space-y-6 hidden">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                    <div class="border-b border-slate-100 pb-4 mb-4">
+                        <h2 class="text-lg font-bold text-slate-800">سند تحويل بين المخازن (Inter-warehouse Transfer)</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">نقل المواد الخام أو الوجبات الجاهزة بين أقسام ومخازن المصنع المختلفة</p>
+                    </div>
+
+                    <form id="transferForm" onsubmit="handleExecuteTransfer(event)" class="space-y-5">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">من مخزن (المصدر) *</label>
+                                <select id="trfSourceWh" onchange="populateTransferItems()" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:ring-2 focus:ring-violet-500 focus:outline-none">
+                                    <option value="wh1">مخزن المواد الخام الرئيسي</option>
+                                    <option value="wh2">مطبخ التجهيز والطهي</option>
+                                    <option value="wh3">مخزن الوجبات الجاهزة</option>
+                                    <option value="wh4">قسم توزيع المدارس</option>
+                                    <option value="wh5">قسم توزيع المستشفيات</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">إلى مخزن (الهدف) *</label>
+                                <select id="trfTargetWh" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:ring-2 focus:ring-violet-500 focus:outline-none">
+                                    <option value="wh2">مطبخ التجهيز والطهي</option>
+                                    <option value="wh1">مخزن المواد الخام الرئيسي</option>
+                                    <option value="wh3">مخزن الوجبات الجاهزة</option>
+                                    <option value="wh4">قسم توزيع المدارس</option>
+                                    <option value="wh5">قسم توزيع المستشفيات</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">تاريخ التحويل *</label>
+                                <input type="date" id="trfDate" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-semibold">
+                            </div>
+                        </div>
+
+                        <!-- Item Select and Qty -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-bold text-slate-700 mb-1">اختر الصنف المراد تحويله *</label>
+                                <select id="trfItemSelect" onchange="updateTransferMaxQty()" required class="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-semibold">
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">الكمية المحولة *</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="number" step="any" id="trfQty" required min="0.001" placeholder="0" class="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-bold">
+                                    <span id="trfUnitBadge" class="text-xs font-bold text-slate-500 shrink-0">--</span>
+                                </div>
+                                <span id="trfMaxQtyHint" class="text-[10px] text-slate-400 mt-1 block">الرصيد المتاح: 0</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">السبب / ملاحظات التحويل</label>
+                            <input type="text" id="trfNotes" placeholder="مثال: صرف خامات لبدء وردية الطهي الصباحية..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs">
+                        </div>
+
+                        <div class="flex justify-end gap-3 pt-2">
+                            <button type="submit" class="bg-violet-600 hover:bg-violet-700 text-white px-6 py-2.5 rounded-xl font-bold text-xs transition shadow-md">
+                                حفظ وتحويل الرصيد فوراً
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- TAB 7: ISSUE & DELIVERY VOUCHER -->
+            <section id="view-issue" class="tab-view space-y-6 hidden">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                    <div class="border-b border-slate-100 pb-4 mb-4">
+                        <h2 class="text-lg font-bold text-slate-800">سند صرف وتوزيع (Issue & Delivery)</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">تسجيل صرف الوجبات الجاهزة للمستشفيات والمدارس أو صرف المواد الخام للجهات المعنية</p>
+                    </div>
+
+                    <form id="issueForm" onsubmit="handleExecuteIssue(event)" class="space-y-5">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">الجهة المستلمة / العميل *</label>
+                                <input type="text" id="issueEntity" required placeholder="مثال: مستشفى الصباح / مدرسة الأحمدي" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">الصرف من مخزن *</label>
+                                <select id="issueSourceWh" onchange="populateIssueItems()" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+                                    <option value="wh3">مخزن الوجبات الجاهزة</option>
+                                    <option value="wh4">قسم توزيع المدارس</option>
+                                    <option value="wh5">قسم توزيع المستشفيات</option>
+                                    <option value="wh1">مخزن المواد الخام الرئيسي</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">تاريخ الصرف *</label>
+                                <input type="date" id="issueDate" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-semibold">
+                            </div>
+                        </div>
+
+                        <!-- Item Select -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-bold text-slate-700 mb-1">اختر الوجبة / الصنف للصرف *</label>
+                                <select id="issueItemSelect" onchange="updateIssueMaxQty()" required class="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-semibold">
+                                    <!-- Dynamic -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">الكمية المنصورة *</label>
+                                <input type="number" step="any" id="issueQty" required min="1" placeholder="0" class="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-bold">
+                                <span id="issueMaxQtyHint" class="text-[10px] text-slate-400 mt-1 block">الرصيد المتاح: 0</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">ملاحظات أو رقم طلبية التوريد</label>
+                            <input type="text" id="issueNotes" placeholder="مثال: توريد الوجبة المدرسية الفترة الصباحية..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs">
+                        </div>
+
+                        <div class="flex justify-end gap-3 pt-2">
+                            <button type="submit" class="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2.5 rounded-xl font-bold text-xs transition shadow-md">
+                                حفظ وسند الصرف والترحيل
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- TAB 8: WASTE & ADJUSTMENTS -->
+            <section id="view-waste" class="tab-view space-y-6 hidden">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                    <div class="border-b border-slate-100 pb-4 mb-4">
+                        <h2 class="text-lg font-bold text-slate-800">سند إتلاف وتعديل رصيد المخزون</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">خاص بسلامة الأغذية والمنتهي الصلاحية والتسويات الناتجة عن الجرد الدوري</p>
+                    </div>
+
+                    <form id="wasteForm" onsubmit="handleExecuteWaste(event)" class="space-y-5">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">نوع الحركة *</label>
+                                <select id="wasteType" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-rose-600 focus:ring-2 focus:ring-rose-500 focus:outline-none">
+                                    <option value="WASTE">إتلاف (منتهي الصلاحية / تالف)</option>
+                                    <option value="ADJUSTMENT_ADD">تسوية جردية - زيادة (+)</option>
+                                    <option value="ADJUSTMENT_SUB">تسوية جردية - عجز (-)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">المخزن المعني *</label>
+                                <select id="wasteWh" onchange="populateWasteItems()" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-semibold">
+                                    <option value="wh1">مخزن المواد الخام الرئيسي</option>
+                                    <option value="wh2">مطبخ التجهيز والطهي</option>
+                                    <option value="wh3">مخزن الوجبات الجاهزة</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">التاريخ *</label>
+                                <input type="date" id="wasteDate" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-semibold">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-bold text-slate-700 mb-1">الصنف المعني *</label>
+                                <select id="wasteItemSelect" required class="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-semibold">
+                                    <!-- Dynamic -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">الكمية *</label>
+                                <input type="number" step="any" id="wasteQty" required min="0.001" placeholder="0" class="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-bold">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">السبب والتفاصيل (ضروري جداً لسلامة الجودة) *</label>
+                            <input type="text" id="wasteReason" required placeholder="مثال: انتهاء فترة الصلاحية / عيب بالكرتونة..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs">
+                        </div>
+
+                        <div class="flex justify-end gap-3 pt-2">
+                            <button type="submit" class="bg-rose-600 hover:bg-rose-700 text-white px-6 py-2.5 rounded-xl font-bold text-xs transition shadow-md">
+                                حفظ سند الإتلاف / التسوية
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- TAB 9: ITEM LEDGER CARD -->
+            <section id="view-ledger" class="tab-view space-y-6 hidden">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800">كارت الصنف الشامل (Item Ledger Card)</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">استعراض حركة المادة الخام أو الوجبة التفصيلية التراكمية منذ البداية</p>
+                    </div>
+
+                    <div class="w-full sm:w-72">
+                        <select id="ledgerItemSelect" onchange="renderItemLedger()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Item Quick Info Header -->
+                <div id="ledgerItemInfo" class="bg-emerald-900 text-white p-5 rounded-2xl shadow-sm hidden">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                        <div>
+                            <span class="text-emerald-300 block mb-0.5">كود الصنف:</span>
+                            <span id="ldgCode" class="font-bold text-sm font-mono">--</span>
+                        </div>
+                        <div>
+                            <span class="text-emerald-300 block mb-0.5">اسم الصنف:</span>
+                            <span id="ldgName" class="font-bold text-sm">--</span>
+                        </div>
+                        <div>
+                            <span class="text-emerald-300 block mb-0.5">الوحدة القياسية:</span>
+                            <span id="ldgUnit" class="font-bold text-sm">--</span>
+                        </div>
+                        <div>
+                            <span class="text-emerald-300 block mb-0.5">الرصيد الحكلي الحالي:</span>
+                            <span id="ldgCurrentStock" class="font-black text-base text-amber-300">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History Movements Table -->
+                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+                    <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+                        <h3 class="text-xs font-bold text-slate-700">سجل جميع الحركات المسجلة للصنف</h3>
+                        <span class="text-[11px] text-slate-400">مرتبة من الأحدث إلى الأقدم</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-xs">
+                            <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3">التاريخ</th>
+                                    <th class="p-3">نوع الحركة</th>
+                                    <th class="p-3">رقم السند</th>
+                                    <th class="p-3">المخزن / الجهة</th>
+                                    <th class="p-3 text-emerald-600">وارد (+)</th>
+                                    <th class="p-3 text-rose-600">صادر (-)</th>
+                                    <th class="p-3 text-indigo-900 font-black">الرصيد المتبقي التراكمي</th>
+                                    <th class="p-3 text-center">معاينة</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ledgerHistoryTable" class="divide-y divide-slate-100">
+                                <!-- Dynamic -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- MODAL 1: ADD / EDIT ITEM MODAL -->
+    <div id="itemModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div class="bg-slate-900 text-white p-4 flex items-center justify-between">
+                <h3 id="itemModalTitle" class="font-bold text-sm">تعريف صنف جديد</h3>
+                <button onclick="closeModal('itemModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="itemForm" onsubmit="handleSaveItem(event)" class="p-5 space-y-4">
+                <input type="hidden" id="itemFormId">
+                <input type="hidden" id="itemFormType">
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">اسم الصنف / الوجبة *</label>
+                    <input type="text" id="itemName" required placeholder="مثال: أرز بسمتي ممتاز / وجبة الدجاج المدرسية" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">كود الصنف (SKU)</label>
+                        <input type="text" id="itemCode" placeholder="تلقائي إن ترك فارغاً" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">التصنيف *</label>
+                        <select id="itemCategory" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-semibold">
+                            <option value="حبوب وغلال">حبوب وغلال</option>
+                            <option value="لحوم وقديد">لحوم وقديد</option>
+                            <option value="زيوت ودهون">زيوت ودهون</option>
+                            <option value="خضروات">خضروات</option>
+                            <option value="ألبان ومشروبات">ألبان ومشروبات</option>
+                            <option value="تغليف وتعبئة">تغليف وتعبئة</option>
+                            <option value="توابل بهارات">توابل بهارات</option>
+                            <option value="وجبات مدرسية">وجبات مدرسية</option>
+                            <option value="وجبات مستشفيات">وجبات مستشفيات</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">وحدة القياس *</label>
+                        <select id="itemUnit" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-semibold">
+                            <option value="كجم">كجم (Kilogram)</option>
+                            <option value="لتر">لتر (Liter)</option>
+                            <option value="علبة">علبة / حبة</option>
+                            <option value="كرتونة">كرتونة</option>
+                            <option value="وجبة">وجبة (Meal)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">الحد الأدنى للرصيد *</label>
+                        <input type="number" step="any" id="itemMinStock" min="0" value="50" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">تكلفة الوحدة (د.ك) *</label>
+                    <input type="number" step="0.001" id="itemCostPrice" min="0" value="0.500" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-brand-600">
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('itemModal')" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200">إلغاء</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold bg-brand-600 text-white hover:bg-brand-700 shadow-sm">حفظ الصنف</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: ADD / EDIT BOM RECIPE MODAL -->
+    <div id="bomModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[90vh] flex flex-col">
+            <div class="bg-slate-900 text-white p-4 flex items-center justify-between">
+                <h3 class="font-bold text-sm">إعداد وصفة وجبة (BOM Recipe)</h3>
+                <button onclick="closeModal('bomModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="bomForm" onsubmit="handleSaveBom(event)" class="p-5 space-y-4 overflow-y-auto flex-1">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">اختر الوجبة الجاهزة *</label>
+                    <select id="bomMealSelect" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-blue-700">
+                        <!-- Meal items -->
+                    </select>
+                </div>
+
+                <!-- Dynamic Ingredients Rows -->
+                <div class="border border-slate-200 rounded-xl overflow-hidden">
+                    <div class="bg-slate-100 p-2.5 flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-700">المكونات والمواد الخام للوجبة الواحدة</span>
+                        <button type="button" onclick="addBomIngredientRow()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-3 py-1 rounded-lg transition flex items-center gap-1">
+                            <i class="fa-solid fa-plus text-[10px]"></i> إضافة مادة خام
+                        </button>
+                    </div>
+                    <div class="p-3 space-y-2" id="bomIngredientsContainer">
+                        <!-- Dynamic Ingredient Rows -->
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('bomModal')" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200">إلغاء</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold bg-amber-600 text-white hover:bg-amber-700 shadow-sm">حفظ الوصفة</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: PRINTABLE VOUCHER VIEW MODAL -->
+    <div id="printableVoucherModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[92vh]">
+            <div class="bg-slate-900 text-white p-4 flex items-center justify-between no-print">
+                <span class="font-bold text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-print text-emerald-400"></i> معاينة سند الرسمية للطباعة
+                </span>
+                <div class="flex items-center gap-2">
+                    <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                        <i class="fa-solid fa-print"></i> طباعة الآن
+                    </button>
+                    <button onclick="closeModal('printableVoucherModal')" class="text-slate-400 hover:text-white px-2 text-lg"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+
+            <!-- Printable Voucher Document Paper -->
+            <div id="voucherPrintPaper" class="p-8 overflow-y-auto flex-1 text-slate-800 space-y-6 bg-white">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast Element -->
+    <div id="toastNotification" class="fixed bottom-5 left-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 ease-out pointer-events-none">
+        <div class="bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-700">
+            <div id="toastIcon" class="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold text-sm">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <div>
+                <h4 id="toastTitle" class="text-xs font-bold">تمت العملية بنجاح</h4>
+                <p id="toastMessage" class="text-[11px] text-slate-300">تم حفظ البيانات بالمنظومة</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application JavaScript Code -->
+    <script>
+
+        // Key for localStorage persistence
+        const STORAGE_KEY = 'KWT_FOOD_FACTORY_DB_V1';
+
+        // Warehouses list initialized
+        const WAREHOUSES = {
+            'wh1': { id: 'wh1', name: 'مخزن المواد الخام الرئيسي', type: 'raw' },
+            'wh2': { id: 'wh2', name: 'مطبخ التجهيز والطهي', type: 'kitchen' },
+            'wh3': { id: 'wh3', name: 'مخزن الوجبات الجاهزة', type: 'meals' },
+            'wh4': { id: 'wh4', name: 'قسم توزيع المدارس', type: 'distribution' },
+            'wh5': { id: 'wh5', name: 'قسم توزيع المستشفيات', type: 'distribution' }
+        };
+
+        // Application State Container
+        let appState = {
+            items: [],
+            boms: [],
+            vouchers: []
+        };
+
+        // Chart Instance
+        let chartInstance = null;
+
+        // Initialize App on DOM Load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadDatabase();
+            setupClock();
+            switchTab('dashboard');
+            setupMobileMenu();
+        });
+
+        function getSeedData() {
+            return {
+                items: [
+                    { id: 'RM001', code: 'RM-001', name: 'أرز بسمتي فاخر', category: 'حبوب وغلال', type: 'raw', unit: 'كجم', minStock: 100, costPrice: 0.850, stock: { wh1: 450, wh2: 50 }, totalStock: 500 },
+                    { id: 'RM002', code: 'RM-002', name: 'صدور دجاج طازجة (نايف)', category: 'لحوم وقديد', type: 'raw', unit: 'كجم', minStock: 150, costPrice: 1.450, stock: { wh1: 300, wh2: 80 }, totalStock: 380 },
+                    { id: 'RM003', code: 'RM-003', name: 'زيت ذرة نقي (دلال)', category: 'زيوت ودهون', type: 'raw', unit: 'لتر', minStock: 50, costPrice: 0.950, stock: { wh1: 120, wh2: 30 }, totalStock: 150 },
+                    { id: 'RM004', code: 'RM-004', name: 'خضار مشكل مجمد (ساديا)', category: 'خضروات', type: 'raw', unit: 'كجم', minStock: 80, costPrice: 0.600, stock: { wh1: 35, wh2: 10 }, totalStock: 45 }, // Low stock!
+                    { id: 'RM005', code: 'RM-005', name: 'حليب طازج كامل الدسم (KDD)', category: 'ألبان ومشروبات', type: 'raw', unit: 'لتر', minStock: 60, costPrice: 0.400, stock: { wh1: 100, wh2: 20 }, totalStock: 120 },
+                    { id: 'RM006', code: 'RM-006', name: 'أطباق قصدير مقسمة مع أغطية', category: 'تغليف وتعبئة', type: 'raw', unit: 'علبة', minStock: 500, costPrice: 0.045, stock: { wh1: 2500, wh2: 300 }, totalStock: 2800 },
+                    { id: 'RM007', code: 'RM-007', name: 'ملح طعام ناعم', category: 'توابل بهارات', type: 'raw', unit: 'كجم', minStock: 20, costPrice: 0.150, stock: { wh1: 80, wh2: 10 }, totalStock: 90 },
+                    { id: 'RM008', code: 'RM-008', name: 'بهارات مجكلة كويتية', category: 'توابل بهارات', type: 'raw', unit: 'كجم', minStock: 15, costPrice: 2.200, stock: { wh1: 25, wh2: 5 }, totalStock: 30 },
+
+                    // Finished Meals
+                    { id: 'FM001', code: 'FM-101', name: 'وجبة الدجاج والكبسة المدرسية', category: 'وجبات مدرسية', type: 'meal', target: 'مدارس', unit: 'وجبة', costPrice: 0.720, stock: { wh3: 420, wh4: 150 }, totalStock: 570 },
+                    { id: 'FM002', code: 'FM-102', name: 'وجبة المستشفى الصحية (قليلة الملح)', category: 'وجبات مستشفيات', type: 'meal', target: 'مستشفيات', unit: 'وجبة', costPrice: 0.850, stock: { wh3: 200, wh5: 80 }, totalStock: 280 },
+                    { id: 'FM003', code: 'FM-103', name: 'وجبة الإفطار المدرسية المغذية', category: 'وجبات مدرسية', type: 'meal', target: 'مدارس', unit: 'وجبة', costPrice: 0.350, stock: { wh3: 300, wh4: 100 }, totalStock: 400 }
+                ],
+                boms: [
+                    {
+                        id: 'BOM001',
+                        mealId: 'FM001',
+                        mealName: 'وجبة الدجاج والكبسة المدرسية',
+                        ingredients: [
+                            { rawId: 'RM001', qty: 0.200 }, // 200g Rice
+                            { rawId: 'RM002', qty: 0.250 }, // 250g Chicken
+                            { rawId: 'RM003', qty: 0.020 }, // 20ml Oil
+                            { rawId: 'RM004', qty: 0.080 }, // 80g Veggies
+                            { rawId: 'RM006', qty: 1.000 }, // 1 Box
+                            { rawId: 'RM008', qty: 0.005 }  // 5g Spices
+                        ]
+                    },
+                    {
+                        id: 'BOM002',
+                        mealId: 'FM002',
+                        mealName: 'وجبة المستشفى الصحية (قليلة الملح)',
+                        ingredients: [
+                            { rawId: 'RM001', qty: 0.180 },
+                            { rawId: 'RM002', qty: 0.220 },
+                            { rawId: 'RM003', qty: 0.010 },
+                            { rawId: 'RM004', qty: 0.150 },
+                            { rawId: 'RM006', qty: 1.000 }
+                        ]
+                    }
+                ],
+                vouchers: [
+                    {
+                        id: 'V-1001',
+                        voucherNo: 'GRV-2026-001',
+                        type: 'RECEIPT',
+                        date: '2026-09-20',
+                        supplier: 'شركة المطاحن الكويتيّة',
+                        targetWh: 'wh1',
+                        items: [
+                            { itemId: 'RM001', itemName: 'أرز بسمتي فاخر', qty: 500, price: 0.850, total: 425.000 }
+                        ],
+                        totalAmount: 425.000,
+                        notes: 'توريد شحنة الأرز الشهرية'
+                    },
+                    {
+                        id: 'V-1002',
+                        voucherNo: 'PROD-2026-001',
+                        type: 'PRODUCTION',
+                        date: '2026-09-22',
+                        mealId: 'FM001',
+                        mealName: 'وجبة الدجاج والكبسة المدرسية',
+                        producedQty: 500,
+                        targetWh: 'wh3',
+                        totalAmount: 360.000,
+                        notes: 'تحضير دفعة الوجبات المدرسية لمنطقة الأحمدي'
+                    }
+                ]
+            };
+        }
+
+        function loadDatabase() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            if (data) {
+                try {
+                    appState = JSON.parse(data);
+                } catch(e) {
+                    appState = getSeedData();
+                    saveDatabase();
+                }
+            } else {
+                appState = getSeedData();
+                saveDatabase();
+            }
+        }
+
+        function saveDatabase() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+        }
+
+        function resetToDemoData() {
+            if (confirm("هل أنت تأكد من إعادة ضبط البيانات وتعيين النموذج التجريبي المصنعي؟")) {
+                appState = getSeedData();
+                saveDatabase();
+                showToast("تم الضبط", "تمت إعادة تعيين البيانات التجريبية بنجاح");
+                location.reload();
+            }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-brand-50', 'text-brand-700', 'border-r-4', 'border-brand-600');
+            });
+
+            const targetView = document.getElementById(`view-${tabId}`);
+            if (targetView) targetView.classList.remove('hidden');
+
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-brand-50', 'text-brand-700', 'border-r-4', 'border-brand-600');
+            }
+
+            // Refresh specific tab views
+            if (tabId === 'dashboard') renderDashboard();
+            if (tabId === 'items') renderItemsTable();
+            if (tabId === 'bom') renderBomGrid();
+            if (tabId === 'production') populateProductionMealSelect();
+            if (tabId === 'receipt') initReceiptForm();
+            if (tabId === 'transfer') populateTransferForm();
+            if (tabId === 'issue') populateIssueForm();
+            if (tabId === 'waste') populateWasteForm();
+            if (tabId === 'ledger') initLedgerView();
+        }
+
+        function renderDashboard() {
+            const rawCount = appState.items.filter(i => i.type === 'raw').length;
+            const mealCount = appState.items.filter(i => i.type === 'meal').length;
+            const lowStockItems = appState.items.filter(i => (i.totalStock || 0) <= i.minStock);
+            const vouchersCount = appState.vouchers.length;
+
+            document.getElementById('statRawCount').innerText = rawCount;
+            document.getElementById('statMealCount').innerText = mealCount;
+            document.getElementById('statLowStockCount').innerText = lowStockItems.length;
+            document.getElementById('statVouchersCount').innerText = vouchersCount;
+
+            // Render Low stock list
+            const lowContainer = document.getElementById('lowStockList');
+            if (lowStockItems.length === 0) {
+                lowContainer.innerHTML = `<div class="p-4 text-center text-xs text-slate-400 font-semibold bg-slate-50 rounded-xl">جميع المواد متوفرة بكفاية فوق الحد الأدنى</div>`;
+            } else {
+                lowContainer.innerHTML = lowStockItems.map(item => `
+                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-rose-50 border border-rose-100 text-xs">
+                        <div>
+                            <p class="font-bold text-rose-900">${item.name}</p>
+                            <span class="text-[10px] text-rose-600 font-mono">${item.code} - الحد الأدنى: ${item.minStock} ${item.unit}</span>
+                        </div>
+                        <div class="text-left">
+                            <span class="font-black text-rose-700 text-sm">${item.totalStock || 0}</span>
+                            <span class="text-[10px] text-rose-600 font-bold block">${item.unit}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Render Recent Vouchers
+            const recentTable = document.getElementById('recentVouchersTable');
+            const sorted = [...appState.vouchers].reverse().slice(0, 5);
+            if (sorted.length === 0) {
+                recentTable.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">لا توجد عمليات مسجلة مؤخراً</td></tr>`;
+            } else {
+                recentTable.innerHTML = sorted.map(v => `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3 font-mono font-bold text-slate-700">${v.voucherNo}</td>
+                        <td class="p-3">${getVoucherTypeBadge(v.type)}</td>
+                        <td class="p-3 text-slate-500 font-mono">${v.date}</td>
+                        <td class="p-3 font-semibold">${v.supplier || v.entity || WAREHOUSES[v.targetWh]?.name || 'المصنع'}</td>
+                        <td class="p-3 font-bold">${v.items ? v.items.length : 1}</td>
+                        <td class="p-3 font-bold text-slate-800">${(v.totalAmount || 0).toFixed(3)} د.ك</td>
+                        <td class="p-3 text-center">
+                            <button onclick='previewVoucherModal("${v.id}")' class="text-indigo-600 hover:text-indigo-800 font-bold bg-indigo-50 px-2 py-1 rounded">معاينة</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            // Render Chart.js
+            renderOperationsChart();
+        }
+
+        function renderOperationsChart() {
+            const ctx = document.getElementById('operationsChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+
+            const counts = {
+                RECEIPT: appState.vouchers.filter(v => v.type === 'RECEIPT').length,
+                PRODUCTION: appState.vouchers.filter(v => v.type === 'PRODUCTION').length,
+                TRANSFER: appState.vouchers.filter(v => v.type === 'TRANSFER').length,
+                ISSUE: appState.vouchers.filter(v => v.type === 'ISSUE').length,
+                WASTE: appState.vouchers.filter(v => v.type === 'WASTE' || v.type.startsWith('ADJUSTMENT')).length
+            };
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['سندات الاستلام', 'تحضير الوجبات', 'التحويل المخزني', 'صرف وتوزيع', 'الإتلاف والتسوية'],
+                    datasets: [{
+                        label: 'عدد العمليات المنفذة',
+                        data: [counts.RECEIPT, counts.PRODUCTION, counts.TRANSFER, counts.ISSUE, counts.WASTE],
+                        backgroundColor: ['#4f46e5', '#10b981', '#8b5cf6', '#06b6d4', '#f43f5e'],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                }
+            });
+        }
+
+        function renderItemsTable() {
+            const search = document.getElementById('itemSearchInput').value.toLowerCase();
+            const filterType = document.getElementById('itemFilterType').value;
+
+            const tbody = document.getElementById('itemsMasterTable');
+            const filtered = appState.items.filter(item => {
+                const matchesSearch = item.name.toLowerCase().includes(search) || item.code.toLowerCase().includes(search) || item.category.toLowerCase().includes(search);
+                const matchesType = filterType === 'ALL' || item.type === filterType;
+                return matchesSearch && matchesType;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-400 font-semibold">لم يتم العثور على أصناف مطابقة</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(item => {
+                const isLow = (item.totalStock || 0) <= item.minStock;
+                return `
+                    <tr class="hover:bg-slate-50 border-b border-slate-100">
+                        <td class="p-3.5 font-mono font-bold text-slate-600">${item.code}</td>
+                        <td class="p-3.5 font-bold text-slate-800">${item.name}</td>
+                        <td class="p-3.5">
+                            <span class="px-2 py-0.5 rounded-md text-[11px] font-bold ${item.type === 'raw' ? 'bg-blue-50 text-blue-700' : 'bg-emerald-50 text-emerald-700'}">
+                                ${item.type === 'raw' ? 'مادة خام' : 'وجبة جاهزة'} - ${item.category}
+                            </span>
+                        </td>
+                        <td class="p-3.5 font-semibold text-slate-600">${item.unit}</td>
+                        <td class="p-3.5 font-bold text-slate-800">${(item.costPrice || 0).toFixed(3)} د.ك</td>
+                        <td class="p-3.5">
+                            <span class="font-black ${isLow ? 'text-rose-600 bg-rose-50 px-2 py-1 rounded-lg border border-rose-200' : 'text-slate-800'}">
+                                ${item.totalStock || 0} ${item.unit}
+                            </span>
+                        </td>
+                        <td class="p-3.5 text-slate-500 font-semibold">${item.minStock} ${item.unit}</td>
+                        <td class="p-3.5 text-center">
+                            <button onclick="editItem('${item.id}')" class="text-blue-600 hover:text-blue-800 font-bold p-1"><i class="fa-solid fa-pen-to-square"></i></button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function openItemModal(type, itemId = null) {
+            document.getElementById('itemForm').reset();
+            document.getElementById('itemFormId').value = itemId || '';
+            document.getElementById('itemFormType').value = type;
+
+            if (itemId) {
+                const item = appState.items.find(i => i.id === itemId);
+                if (item) {
+                    document.getElementById('itemModalTitle').innerText = 'تعديل الصنف';
+                    document.getElementById('itemName').value = item.name;
+                    document.getElementById('itemCode').value = item.code;
+                    document.getElementById('itemCategory').value = item.category;
+                    document.getElementById('itemUnit').value = item.unit;
+                    document.getElementById('itemMinStock').value = item.minStock;
+                    document.getElementById('itemCostPrice').value = item.costPrice;
+                }
+            } else {
+                document.getElementById('itemModalTitle').innerText = type === 'raw' ? 'تعريف مادة خام جديدة' : 'تعريف وجبة جاهزة جديدة';
+                document.getElementById('itemCode').value = (type === 'raw' ? 'RM-' : 'FM-') + Math.floor(100 + Math.random() * 900);
+            }
+
+            document.getElementById('itemModal').classList.remove('hidden');
+        }
+
+        function editItem(id) {
+            const item = appState.items.find(i => i.id === id);
+            if (item) openItemModal(item.type, id);
+        }
+
+        function handleSaveItem(e) {
+            e.preventDefault();
+            const id = document.getElementById('itemFormId').value;
+            const type = document.getElementById('itemFormType').value;
+            const name = document.getElementById('itemName').value;
+            const code = document.getElementById('itemCode').value || ((type === 'raw' ? 'RM-' : 'FM-') + Date.now());
+            const category = document.getElementById('itemCategory').value;
+            const unit = document.getElementById('itemUnit').value;
+            const minStock = parseFloat(document.getElementById('itemMinStock').value) || 0;
+            const costPrice = parseFloat(document.getElementById('itemCostPrice').value) || 0;
+
+            if (id) {
+                const existing = appState.items.find(i => i.id === id);
+                if (existing) {
+                    existing.name = name;
+                    existing.code = code;
+                    existing.category = category;
+                    existing.unit = unit;
+                    existing.minStock = minStock;
+                    existing.costPrice = costPrice;
+                }
+            } else {
+                const newItem = {
+                    id: 'ITM-' + Date.now(),
+                    code,
+                    name,
+                    category,
+                    type,
+                    unit,
+                    minStock,
+                    costPrice,
+                    stock: { wh1: 0, wh2: 0, wh3: 0 },
+                    totalStock: 0
+                };
+                appState.items.push(newItem);
+            }
+
+            saveDatabase();
+            closeModal('itemModal');
+            renderItemsTable();
+            showToast('تم الحفظ', 'تم حفظ بيانات الصنف بنجاح');
+        }
+
+        function renderBomGrid() {
+            const container = document.getElementById('bomGridContainer');
+            if (appState.boms.length === 0) {
+                container.innerHTML = `<div class="col-span-2 p-8 text-center text-slate-400 bg-white rounded-2xl border border-slate-200">لا توجد وصفات وجبات معرفة حتى الآن.</div>`;
+                return;
+            }
+
+            container.innerHTML = appState.boms.map(bom => {
+                const meal = appState.items.find(i => i.id === bom.mealId);
+                // Calculate estimated unit production cost from BOM
+                let estCost = 0;
+                const ingredientsList = bom.ingredients.map(ing => {
+                    const raw = appState.items.find(r => r.id === ing.rawId);
+                    const cost = raw ? (raw.costPrice * ing.qty) : 0;
+                    estCost += cost;
+                    return `
+                        <div class="flex items-center justify-between py-1 text-xs border-b border-slate-100 last:border-0">
+                            <span class="font-bold text-slate-700">${raw ? raw.name : 'مادة محذوفة'}</span>
+                            <span class="font-mono bg-slate-100 px-2 py-0.5 rounded text-slate-600">${ing.qty} ${raw ? raw.unit : ''}</span>
+                        </div>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 space-y-4 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                                <h3 class="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                                    <i class="fa-solid fa-plate-wheat text-amber-500"></i>
+                                    ${bom.mealName}
+                                </h3>
+                                <span class="text-xs font-black bg-amber-50 text-amber-700 px-2.5 py-1 rounded-lg">
+                                    تكلفة الوصفة: ${estCost.toFixed(3)} د.ك
+                                </span>
+                            </div>
+                            <div class="mt-3 space-y-1">
+                                <span class="text-[11px] font-bold text-slate-400 block mb-2">المكونات القياسية لوجبة واحدة:</span>
+                                ${ingredientsList}
+                            </div>
+                        </div>
+                        <div class="pt-3 border-t border-slate-100 flex justify-end">
+                            <button onclick="editBom('${bom.id}')" class="text-amber-600 hover:text-amber-800 text-xs font-bold flex items-center gap-1">
+                                <i class="fa-solid fa-pen-to-square"></i> تعديل الوصفة
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openBomModal(bomId = null) {
+            const mealSelect = document.getElementById('bomMealSelect');
+            const meals = appState.items.filter(i => i.type === 'meal');
+            mealSelect.innerHTML = meals.map(m => `<option value="${m.id}">${m.name} (${m.code})</option>`).join('');
+
+            const container = document.getElementById('bomIngredientsContainer');
+            container.innerHTML = '';
+
+            if (bomId) {
+                const bom = appState.boms.find(b => b.id === bomId);
+                if (bom) {
+                    mealSelect.value = bom.mealId;
+                    bom.ingredients.forEach(ing => addBomIngredientRow(ing.rawId, ing.qty));
+                }
+            } else {
+                addBomIngredientRow();
+            }
+
+            document.getElementById('bomModal').classList.remove('hidden');
+        }
+
+        function editBom(id) {
+            openBomModal(id);
+        }
+
+        function addBomIngredientRow(selectedRawId = '', qty = 0.1) {
+            const container = document.getElementById('bomIngredientsContainer');
+            const rawItems = appState.items.filter(i => i.type === 'raw');
+            const rowId = 'bom-row-' + Date.now() + Math.random().toString(36).substr(2, 4);
+
+            const row = document.createElement('div');
+            row.id = rowId;
+            row.className = 'flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200';
+            row.innerHTML = `
+                <select class="bom-raw-select flex-1 bg-white border border-slate-200 rounded-lg p-2 text-xs font-semibold">
+                    ${rawItems.map(r => `<option value="${r.id}" ${r.id === selectedRawId ? 'selected' : ''}>${r.name} (${r.unit})</option>`).join('')}
+                </select>
+                <input type="number" step="any" value="${qty}" min="0.001" class="bom-qty-input w-24 bg-white border border-slate-200 rounded-lg p-2 text-xs font-bold text-center" placeholder="الكمية">
+                <button type="button" onclick="document.getElementById('${rowId}').remove()" class="text-rose-500 hover:text-rose-700 p-1"><i class="fa-solid fa-trash-can"></i></button>
+            `;
+            container.appendChild(row);
+        }
+
+        function handleSaveBom(e) {
+            e.preventDefault();
+            const mealId = document.getElementById('bomMealSelect').value;
+            const meal = appState.items.find(i => i.id === mealId);
+            if (!meal) return;
+
+            const rows = document.querySelectorAll('#bomIngredientsContainer > div');
+            const ingredients = [];
+
+            rows.forEach(r => {
+                const rawId = r.querySelector('.bom-raw-select').value;
+                const qty = parseFloat(r.querySelector('.bom-qty-input').value) || 0;
+                if (rawId && qty > 0) {
+                    ingredients.push({ rawId, qty });
+                }
+            });
+
+            if (ingredients.length === 0) {
+                alert("يرجى إضافة مادة خام واحدة على الأقل بالوصفة");
+                return;
+            }
+
+            const existingIdx = appState.boms.findIndex(b => b.mealId === mealId);
+            const bomObj = {
+                id: existingIdx >= 0 ? appState.boms[existingIdx].id : 'BOM-' + Date.now(),
+                mealId,
+                mealName: meal.name,
+                ingredients
+            };
+
+            if (existingIdx >= 0) {
+                appState.boms[existingIdx] = bomObj;
+            } else {
+                appState.boms.push(bomObj);
+            }
+
+            saveDatabase();
+            closeModal('bomModal');
+            renderBomGrid();
+            showToast('تم الحفظ', 'تم حفظ وصفة الوجبة والريسبي بنجاح');
+        }
+
+        function populateProductionMealSelect() {
+            const select = document.getElementById('prodMealSelect');
+            select.innerHTML = '<option value="">-- اختر الوجبة للتحضير --</option>' + 
+                appState.boms.map(b => `<option value="${b.mealId}">${b.mealName}</option>`).join('');
+            calculateProductionRequirements();
+        }
+
+        function calculateProductionRequirements() {
+            const mealId = document.getElementById('prodMealSelect').value;
+            const qty = parseFloat(document.getElementById('prodQuantity').value) || 0;
+            const previewContainer = document.getElementById('productionIngredientsPreview');
+            const totalCostDisplay = document.getElementById('prodTotalCostDisplay');
+
+            if (!mealId || qty <= 0) {
+                previewContainer.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">يرجى تحديد الوجبة والكمية لإجراء تحليل الرصيد والمكونات</td></tr>`;
+                totalCostDisplay.innerText = '0.000';
+                return;
+            }
+
+            const bom = appState.boms.find(b => b.mealId === mealId);
+            if (!bom) {
+                previewContainer.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-rose-500 font-bold">لا توجد وصفة (BOM) مسجلة لهذه الوجبة! يرجى إعداد الوصفة أولاً.</td></tr>`;
+                totalCostDisplay.innerText = '0.000';
+                return;
+            }
+
+            let batchTotalCost = 0;
+            let allAvailable = true;
+
+            const html = bom.ingredients.map(ing => {
+                const raw = appState.items.find(r => r.id === ing.rawId);
+                const totalNeeded = ing.qty * qty;
+                const currentStock = raw ? (raw.totalStock || 0) : 0;
+                const isSufficient = currentStock >= totalNeeded;
+                if (!isSufficient) allAvailable = false;
+
+                const cost = raw ? (raw.costPrice * totalNeeded) : 0;
+                batchTotalCost += cost;
+
+                return `
+                    <tr class="hover:bg-slate-50 border-b border-slate-100">
+                        <td class="p-2.5 font-bold text-slate-800">${raw ? raw.name : 'مادة مفقودة'}</td>
+                        <td class="p-2.5 font-mono text-slate-600">${ing.qty} ${raw ? raw.unit : ''}</td>
+                        <td class="p-2.5 font-bold font-mono text-indigo-700">${totalNeeded.toFixed(2)} ${raw ? raw.unit : ''}</td>
+                        <td class="p-2.5 font-bold font-mono">${currentStock} ${raw ? raw.unit : ''}</td>
+                        <td class="p-2.5">
+                            ${isSufficient ? 
+                                `<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded text-[11px] font-bold"><i class="fa-solid fa-check"></i> متوفر</span>` : 
+                                `<span class="bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded text-[11px] font-bold"><i class="fa-solid fa-xmark"></i> عجز بالرصيد</span>`
+                            }
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            previewContainer.innerHTML = html;
+            totalCostDisplay.innerText = batchTotalCost.toFixed(3);
+        }
+
+        function handleExecuteProduction(e) {
+            e.preventDefault();
+            const mealId = document.getElementById('prodMealSelect').value;
+            const qty = parseFloat(document.getElementById('prodQuantity').value) || 0;
+            const targetWh = document.getElementById('prodTargetWarehouse').value;
+
+            const bom = appState.boms.find(b => b.mealId === mealId);
+            if (!bom || qty <= 0) return;
+
+            // Stock availability validation
+            for (let ing of bom.ingredients) {
+                const raw = appState.items.find(r => r.id === ing.rawId);
+                const totalNeeded = ing.qty * qty;
+                if (!raw || (raw.totalStock || 0) < totalNeeded) {
+                    alert(`عذراً! لا يوجد رصيد كافٍ من المادة الخام: (${raw ? raw.name : ''}). المطلوب: ${totalNeeded}`);
+                    return;
+                }
+            }
+
+            // Deduct Raw Materials & Add Ready Meals
+            let batchCost = 0;
+            bom.ingredients.forEach(ing => {
+                const raw = appState.items.find(r => r.id === ing.rawId);
+                const needed = ing.qty * qty;
+                batchCost += (raw.costPrice * needed);
+
+                // Deduct from Wh1 or Wh2
+                if (!raw.stock) raw.stock = {};
+                let remainingToDeduct = needed;
+
+                ['wh2', 'wh1'].forEach(wh => {
+                    if (remainingToDeduct > 0 && raw.stock[wh]) {
+                        const avail = raw.stock[wh];
+                        const deduct = Math.min(avail, remainingToDeduct);
+                        raw.stock[wh] -= deduct;
+                        remainingToDeduct -= deduct;
+                    }
+                });
+                raw.totalStock = Object.values(raw.stock).reduce((a, b) => a + b, 0);
+            });
+
+            // Add Finished Meal to Target Wh
+            const meal = appState.items.find(i => i.id === mealId);
+            if (!meal.stock) meal.stock = {};
+            meal.stock[targetWh] = (meal.stock[targetWh] || 0) + qty;
+            meal.totalStock = Object.values(meal.stock).reduce((a, b) => a + b, 0);
+
+            // Log Voucher
+            const vNo = 'PROD-' + Date.now().toString().substr(-6);
+            const voucher = {
+                id: 'V-' + Date.now(),
+                voucherNo: vNo,
+                type: 'PRODUCTION',
+                date: new Date().toISOString().split('T')[0],
+                mealId,
+                mealName: meal.name,
+                producedQty: qty,
+                targetWh,
+                totalAmount: batchCost,
+                notes: `تحضير عدد ${qty} ${meal.unit} وتنزيل المكونات من المخزن`
+            };
+
+            appState.vouchers.push(voucher);
+            saveDatabase();
+
+            showToast('تم التحضير', `تم إنتاج ${qty} وجبة وخصم المواد الخام آلياً`);
+            document.getElementById('productionForm').reset();
+            calculateProductionRequirements();
+        }
+
+        function initReceiptForm() {
+            document.getElementById('rcptDate').value = new Date().toISOString().split('T')[0];
+            const container = document.getElementById('receiptRowsContainer');
+            container.innerHTML = '';
+            addReceiptRow();
+        }
+
+        function addReceiptRow() {
+            const container = document.getElementById('receiptRowsContainer');
+            const rawItems = appState.items.filter(i => i.type === 'raw');
+            const rowId = 'rcpt-row-' + Date.now() + Math.random().toString(36).substr(2, 4);
+
+            const tr = document.createElement('tr');
+            tr.id = rowId;
+            tr.className = 'hover:bg-slate-50 border-b border-slate-100';
+            tr.innerHTML = `
+                <td class="p-2">
+                    <select onchange="updateReceiptRowPrice('${rowId}')" class="rcpt-item-select w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-semibold">
+                        ${rawItems.map(i => `<option value="${i.id}" data-price="${i.costPrice}">${i.name} (${i.code})</option>`).join('')}
+                    </select>
+                </td>
+                <td class="p-2">
+                    <input type="number" step="any" min="0.001" value="10" oninput="calcReceiptTotal()" class="rcpt-qty-input w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold text-center">
+                </td>
+                <td class="p-2">
+                    <input type="number" step="0.001" min="0" value="0.500" oninput="calcReceiptTotal()" class="rcpt-price-input w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold text-center">
+                </td>
+                <td class="p-2 font-bold font-mono text-brand-600 text-center text-xs rcpt-row-total">
+                    0.000
+                </td>
+                <td class="p-2 text-center">
+                    <button type="button" onclick="document.getElementById('${rowId}').remove(); calcReceiptTotal();" class="text-rose-500 hover:text-rose-700 p-1"><i class="fa-solid fa-trash-can"></i></button>
+                </td>
+            `;
+            container.appendChild(tr);
+            updateReceiptRowPrice(rowId);
+            calcReceiptTotal();
+        }
+
+        function updateReceiptRowPrice(rowId) {
+            const row = document.getElementById(rowId);
+            if (!row) return;
+            const select = row.querySelector('.rcpt-item-select');
+            const priceInput = row.querySelector('.rcpt-price-input');
+            const opt = select.options[select.selectedIndex];
+            if (opt) {
+                priceInput.value = parseFloat(opt.getAttribute('data-price') || 0).toFixed(3);
+            }
+            calcReceiptTotal();
+        }
+
+        function calcReceiptTotal() {
+            let grandTotal = 0;
+            document.querySelectorAll('#receiptRowsContainer tr').forEach(tr => {
+                const qty = parseFloat(tr.querySelector('.rcpt-qty-input').value) || 0;
+                const price = parseFloat(tr.querySelector('.rcpt-price-input').value) || 0;
+                const total = qty * price;
+                tr.querySelector('.rcpt-row-total').innerText = total.toFixed(3);
+                grandTotal += total;
+            });
+            document.getElementById('rcptGrandTotal').innerText = grandTotal.toFixed(3);
+        }
+
+        function handleSaveReceiptVoucher(e) {
+            e.preventDefault();
+            const supplier = document.getElementById('rcptSupplier').value;
+            const targetWh = document.getElementById('rcptTargetWarehouse').value;
+            const date = document.getElementById('rcptDate').value;
+            const notes = document.getElementById('rcptNotes').value;
+
+            const items = [];
+            let grandTotal = 0;
+
+            document.querySelectorAll('#receiptRowsContainer tr').forEach(tr => {
+                const itemId = tr.querySelector('.rcpt-item-select').value;
+                const qty = parseFloat(tr.querySelector('.rcpt-qty-input').value) || 0;
+                const price = parseFloat(tr.querySelector('.rcpt-price-input').value) || 0;
+
+                if (itemId && qty > 0) {
+                    const item = appState.items.find(i => i.id === itemId);
+                    const total = qty * price;
+                    grandTotal += total;
+                    items.push({ itemId, itemName: item ? item.name : '', qty, price, total });
+
+                    // Update Item Stock immediately
+                    if (!item.stock) item.stock = {};
+                    item.stock[targetWh] = (item.stock[targetWh] || 0) + qty;
+                    item.totalStock = Object.values(item.stock).reduce((a, b) => a + b, 0);
+                    item.costPrice = price; // update last purchase cost
+                }
+            });
+
+            if (items.length === 0) {
+                alert("يرجى إضافة بند استلام واحد على الأقل");
+                return;
+            }
+
+            const voucher = {
+                id: 'V-' + Date.now(),
+                voucherNo: 'GRV-' + Date.now().toString().substr(-6),
+                type: 'RECEIPT',
+                supplier,
+                targetWh,
+                date,
+                items,
+                totalAmount: grandTotal,
+                notes
+            };
+
+            appState.vouchers.push(voucher);
+            saveDatabase();
+
+            showToast('تم التوريد', 'تم تسجيل سند الاستلام وتحديث الرصيد بالمخزن');
+            initReceiptForm();
+        }
+
+        function populateTransferForm() {
+            document.getElementById('trfDate').value = new Date().toISOString().split('T')[0];
+            populateTransferItems();
+        }
+
+        function populateTransferItems() {
+            const sourceWh = document.getElementById('trfSourceWh').value;
+            const select = document.getElementById('trfItemSelect');
+
+            const availableItems = appState.items.filter(item => {
+                const stockInWh = item.stock ? (item.stock[sourceWh] || 0) : 0;
+                return stockInWh > 0;
+            });
+
+            if (availableItems.length === 0) {
+                select.innerHTML = `<option value="">لا توجد أصناف متوفرة في هذا المخزن</option>`;
+            } else {
+                select.innerHTML = availableItems.map(i => `<option value="${i.id}">${i.name} (${i.code}) - المتاح: ${i.stock[sourceWh]} ${i.unit}</option>`).join('');
+            }
+            updateTransferMaxQty();
+        }
+
+        function updateTransferMaxQty() {
+            const sourceWh = document.getElementById('trfSourceWh').value;
+            const itemId = document.getElementById('trfItemSelect').value;
+            const hint = document.getElementById('trfMaxQtyHint');
+            const unitBadge = document.getElementById('trfUnitBadge');
+
+            const item = appState.items.find(i => i.id === itemId);
+            if (item) {
+                const avail = item.stock ? (item.stock[sourceWh] || 0) : 0;
+                hint.innerText = `الرصيد المتاح بالمخزن المصدر: ${avail} ${item.unit}`;
+                unitBadge.innerText = item.unit;
+            } else {
+                hint.innerText = 'الرصيد المتاح: 0';
+                unitBadge.innerText = '--';
+            }
+        }
+
+        function handleExecuteTransfer(e) {
+            e.preventDefault();
+            const sourceWh = document.getElementById('trfSourceWh').value;
+            const targetWh = document.getElementById('trfTargetWh').value;
+            const date = document.getElementById('trfDate').value;
+            const itemId = document.getElementById('trfItemSelect').value;
+            const qty = parseFloat(document.getElementById('trfQty').value) || 0;
+            const notes = document.getElementById('trfNotes').value;
+
+            if (sourceWh === targetWh) {
+                alert("لا يمكن التحويل لنفس المخزن!");
+                return;
+            }
+
+            const item = appState.items.find(i => i.id === itemId);
+            if (!item) return;
+
+            const avail = item.stock ? (item.stock[sourceWh] || 0) : 0;
+            if (qty > avail) {
+                alert(`الكمية المطلوبة للتحويل (${qty}) أكبر من الرصيد المتاح (${avail})`);
+                return;
+            }
+
+            // Deduct source, Add target
+            item.stock[sourceWh] -= qty;
+            item.stock[targetWh] = (item.stock[targetWh] || 0) + qty;
+
+            const voucher = {
+                id: 'V-' + Date.now(),
+                voucherNo: 'TRF-' + Date.now().toString().substr(-6),
+                type: 'TRANSFER',
+                sourceWh,
+                targetWh,
+                date,
+                items: [{ itemId, itemName: item.name, qty, unit: item.unit }],
+                totalAmount: item.costPrice * qty,
+                notes
+            };
+
+            appState.vouchers.push(voucher);
+            saveDatabase();
+
+            showToast('تم التحويل', 'تم نقل الرصيد بين المخازن بنجاح');
+            document.getElementById('transferForm').reset();
+            populateTransferForm();
+        }
+
+        function populateIssueForm() {
+            document.getElementById('issueDate').value = new Date().toISOString().split('T')[0];
+            populateIssueItems();
+        }
+
+        function populateIssueItems() {
+            const sourceWh = document.getElementById('issueSourceWh').value;
+            const select = document.getElementById('issueItemSelect');
+
+            const availableItems = appState.items.filter(item => {
+                const stockInWh = item.stock ? (item.stock[sourceWh] || 0) : 0;
+                return stockInWh > 0;
+            });
+
+            if (availableItems.length === 0) {
+                select.innerHTML = `<option value="">لا توجد أيا أصناف متوفرة بالمخزن</option>`;
+            } else {
+                select.innerHTML = availableItems.map(i => `<option value="${i.id}">${i.name} (${i.code}) - المتاح: ${i.stock[sourceWh]} ${i.unit}</option>`).join('');
+            }
+            updateIssueMaxQty();
+        }
+
+        function updateIssueMaxQty() {
+            const sourceWh = document.getElementById('issueSourceWh').value;
+            const itemId = document.getElementById('issueItemSelect').value;
+            const hint = document.getElementById('issueMaxQtyHint');
+
+            const item = appState.items.find(i => i.id === itemId);
+            if (item) {
+                const avail = item.stock ? (item.stock[sourceWh] || 0) : 0;
+                hint.innerText = `الرصيد المتاح للصرف: ${avail} ${item.unit}`;
+            } else {
+                hint.innerText = 'الرصيد المتاح: 0';
+            }
+        }
+
+        function handleExecuteIssue(e) {
+            e.preventDefault();
+            const entity = document.getElementById('issueEntity').value;
+            const sourceWh = document.getElementById('issueSourceWh').value;
+            const date = document.getElementById('issueDate').value;
+            const itemId = document.getElementById('issueItemSelect').value;
+            const qty = parseFloat(document.getElementById('issueQty').value) || 0;
+            const notes = document.getElementById('issueNotes').value;
+
+            const item = appState.items.find(i => i.id === itemId);
+            if (!item) return;
+
+            const avail = item.stock ? (item.stock[sourceWh] || 0) : 0;
+            if (qty > avail) {
+                alert(`عذراً! الكمية المنصورة أكبر من الرصيد المتاح بالمخزن.`);
+                return;
+            }
+
+            // Deduct stock
+            item.stock[sourceWh] -= qty;
+            item.totalStock = Object.values(item.stock).reduce((a, b) => a + b, 0);
+
+            const voucher = {
+                id: 'V-' + Date.now(),
+                voucherNo: 'ISU-' + Date.now().toString().substr(-6),
+                type: 'ISSUE',
+                entity,
+                sourceWh,
+                date,
+                items: [{ itemId, itemName: item.name, qty, unit: item.unit }],
+                totalAmount: item.costPrice * qty,
+                notes
+            };
+
+            appState.vouchers.push(voucher);
+            saveDatabase();
+
+            showToast('تم الصرف', 'تمت عملية الصرف للجهة وتحديث الرصيد');
+            document.getElementById('issueForm').reset();
+            populateIssueForm();
+        }
+
+        function populateWasteForm() {
+            document.getElementById('wasteDate').value = new Date().toISOString().split('T')[0];
+            populateWasteItems();
+        }
+
+        function populateWasteItems() {
+            const select = document.getElementById('wasteItemSelect');
+            select.innerHTML = appState.items.map(i => `<option value="${i.id}">${i.name} (${i.code}) - الرصيد الحكلي: ${i.totalStock || 0} ${i.unit}</option>`).join('');
+        }
+
+        function handleExecuteWaste(e) {
+            e.preventDefault();
+            const type = document.getElementById('wasteType').value;
+            const wh = document.getElementById('wasteWh').value;
+            const date = document.getElementById('wasteDate').value;
+            const itemId = document.getElementById('wasteItemSelect').value;
+            const qty = parseFloat(document.getElementById('wasteQty').value) || 0;
+            const reason = document.getElementById('wasteReason').value;
+
+            const item = appState.items.find(i => i.id === itemId);
+            if (!item) return;
+
+            if (!item.stock) item.stock = {};
+
+            if (type === 'WASTE' || type === 'ADJUSTMENT_SUB') {
+                const avail = item.stock[wh] || 0;
+                if (qty > avail) {
+                    alert("الكمية المراد خصمها أكبر من الرصيد المتاح بهذا المخزن!");
+                    return;
+                }
+                item.stock[wh] -= qty;
+            } else if (type === 'ADJUSTMENT_ADD') {
+                item.stock[wh] = (item.stock[wh] || 0) + qty;
+            }
+
+            item.totalStock = Object.values(item.stock).reduce((a, b) => a + b, 0);
+
+            const voucher = {
+                id: 'V-' + Date.now(),
+                voucherNo: (type === 'WASTE' ? 'WST-' : 'ADJ-') + Date.now().toString().substr(-6),
+                type,
+                targetWh: wh,
+                date,
+                items: [{ itemId, itemName: item.name, qty, unit: item.unit }],
+                totalAmount: item.costPrice * qty,
+                notes: reason
+            };
+
+            appState.vouchers.push(voucher);
+            saveDatabase();
+
+            showToast('تم التسجيل', 'تم تسوية الرصيد وحفظ السند بنجاح');
+            document.getElementById('wasteForm').reset();
+            populateWasteForm();
+        }
+
+        function initLedgerView() {
+            const select = document.getElementById('ledgerItemSelect');
+            select.innerHTML = appState.items.map(i => `<option value="${i.id}">${i.name} (${i.code})</option>`).join('');
+            if (appState.items.length > 0) renderItemLedger();
+        }
+
+        function renderItemLedger() {
+            const itemId = document.getElementById('ledgerItemSelect').value;
+            const item = appState.items.find(i => i.id === itemId);
+
+            if (!item) return;
+
+            // Display Header
+            const infoBox = document.getElementById('ledgerItemInfo');
+            infoBox.classList.remove('hidden');
+            document.getElementById('ldgCode').innerText = item.code;
+            document.getElementById('ldgName').innerText = item.name;
+            document.getElementById('ldgUnit').innerText = item.unit;
+            document.getElementById('ldgCurrentStock').innerText = (item.totalStock || 0) + ' ' + item.unit;
+
+            // Compute ledger rows chronologically
+            const history = [];
+            
+            // Collect all voucher entries touching this item
+            appState.vouchers.forEach(v => {
+                let qtyIn = 0;
+                let qtyOut = 0;
+
+                if (v.type === 'RECEIPT') {
+                    const match = v.items?.find(i => i.itemId === itemId);
+                    if (match) qtyIn = match.qty;
+                } else if (v.type === 'PRODUCTION') {
+                    if (v.mealId === itemId) {
+                        qtyIn = v.producedQty; // Produced meal output
+                    } else {
+                        // Check if it was used as BOM ingredient
+                        const bom = appState.boms.find(b => b.mealId === v.mealId);
+                        if (bom) {
+                            const ing = bom.ingredients.find(i => i.rawId === itemId);
+                            if (ing) qtyOut = ing.qty * v.producedQty;
+                        }
+                    }
+                } else if (v.type === 'TRANSFER' || v.type === 'ISSUE' || v.type === 'WASTE' || v.type.startsWith('ADJUSTMENT')) {
+                    const match = v.items?.find(i => i.itemId === itemId);
+                    if (match) {
+                        if (v.type === 'TRANSFER') {
+                            // Transfer is in for target, out for source
+                            qtyOut = match.qty;
+                        } else if (v.type === 'ISSUE' || v.type === 'WASTE' || v.type === 'ADJUSTMENT_SUB') {
+                            qtyOut = match.qty;
+                        } else if (v.type === 'ADJUSTMENT_ADD') {
+                            qtyIn = match.qty;
+                        }
+                    }
+                }
+
+                if (qtyIn > 0 || qtyOut > 0) {
+                    history.push({
+                        date: v.date,
+                        voucherNo: v.voucherNo,
+                        type: v.type,
+                        source: v.supplier || v.entity || WAREHOUSES[v.targetWh]?.name || WAREHOUSES[v.sourceWh]?.name || 'المصنع',
+                        qtyIn,
+                        qtyOut,
+                        voucherId: v.id
+                    });
+                }
+            });
+
+            // Sort chronologically
+            history.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            // Calculate cumulative balance
+            let cumulative = 0;
+            const rowsWithBalance = history.map(row => {
+                cumulative += (row.qtyIn - row.qtyOut);
+                return { ...row, balance: cumulative };
+            });
+
+            // Render table (newest top)
+            const tbody = document.getElementById('ledgerHistoryTable');
+            if (rowsWithBalance.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-400 font-semibold">لا توجد حركات مسجلة لهذا الصنف حتى الآن</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = rowsWithBalance.reverse().map(row => `
+                <tr class="hover:bg-slate-50 border-b border-slate-100">
+                    <td class="p-3 font-mono font-semibold text-slate-600">${row.date}</td>
+                    <td class="p-3">${getVoucherTypeBadge(row.type)}</td>
+                    <td class="p-3 font-mono font-bold text-slate-700">${row.voucherNo}</td>
+                    <td class="p-3 font-semibold text-slate-600">${row.source}</td>
+                    <td class="p-3 font-bold text-emerald-600 font-mono">${row.qtyIn > 0 ? '+' + row.qtyIn : '-'}</td>
+                    <td class="p-3 font-bold text-rose-600 font-mono">${row.qtyOut > 0 ? '-' + row.qtyOut : '-'}</td>
+                    <td class="p-3 font-black text-indigo-900 font-mono text-sm bg-indigo-50/50">${row.balance} ${item.unit}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="previewVoucherModal('${row.voucherId}')" class="text-indigo-600 hover:text-indigo-800 font-bold bg-indigo-50 px-2 py-0.5 rounded">عرض</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function previewVoucherModal(voucherId) {
+            const v = appState.vouchers.find(v => v.id === voucherId);
+            if (!v) return;
+
+            const paper = document.getElementById('voucherPrintPaper');
+            
+            paper.innerHTML = `
+                <div class="border-b-2 border-slate-800 pb-4 flex justify-between items-start">
+                    <div>
+                        <h1 class="text-2xl font-black text-slate-900">مصنع التجهيزات الغذائية</h1>
+                        <p class="text-xs font-bold text-slate-500">دولة الكويت - قسم التوريدات الطبية والمدرسية</p>
+                        <p class="text-[11px] text-slate-400">الهاتف: 22000000 | السجل التجاري: 1029384</p>
+                    </div>
+                    <div class="text-left">
+                        <div class="inline-block bg-slate-900 text-white font-bold px-3 py-1 text-sm rounded mb-1">
+                            ${v.voucherNo}
+                        </div>
+                        <p class="text-xs text-slate-500 font-mono">التاريخ: ${v.date}</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 text-xs bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div>
+                        <span class="text-slate-400 block">نوع السند:</span>
+                        <span class="font-bold text-slate-800">${getVoucherTypeName(v.type)}</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block">الجهة / المورد / المخزن:</span>
+                        <span class="font-bold text-slate-800">${v.supplier || v.entity || WAREHOUSES[v.targetWh]?.name || 'التصنيع الداخلي'}</span>
+                    </div>
+                </div>
+
+                <table class="w-full text-right text-xs border-collapse">
+                    <thead>
+                        <tr class="bg-slate-900 text-white">
+                            <th class="p-2.5">البند / الصنف</th>
+                            <th class="p-2.5 text-center">الكمية</th>
+                            <th class="p-2.5 text-center">الوحدة</th>
+                            <th class="p-2.5 text-center">السعر التقديري</th>
+                            <th class="p-2.5 text-center">الإجمالي (د.ك)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 border border-slate-200">
+                        ${v.items ? v.items.map(i => `
+                            <tr>
+                                <td class="p-2.5 font-bold">${i.itemName || v.mealName}</td>
+                                <td class="p-2.5 text-center font-mono font-bold">${i.qty || v.producedQty}</td>
+                                <td class="p-2.5 text-center">${i.unit || 'وجبة'}</td>
+                                <td class="p-2.5 text-center font-mono">${(i.price || 0).toFixed(3)}</td>
+                                <td class="p-2.5 text-center font-mono font-bold">${(i.total || v.totalAmount || 0).toFixed(3)}</td>
+                            </tr>
+                        `).join('') : `
+                            <tr>
+                                <td class="p-2.5 font-bold">${v.mealName}</td>
+                                <td class="p-2.5 text-center font-mono font-bold">${v.producedQty}</td>
+                                <td class="p-2.5 text-center">وجبة</td>
+                                <td class="p-2.5 text-center font-mono">--</td>
+                                <td class="p-2.5 text-center font-mono font-bold">${(v.totalAmount || 0).toFixed(3)}</td>
+                            </tr>
+                        `}
+                    </tbody>
+                </table>
+
+                <div class="flex justify-between items-center bg-slate-100 p-3 rounded-xl border border-slate-200 text-xs font-bold">
+                    <span>القيمة الإجمالية للسند:</span>
+                    <span class="text-base text-slate-900 font-black font-mono">${(v.totalAmount || 0).toFixed(3)} د.ك</span>
+                </div>
+
+                <div class="pt-8 grid grid-cols-3 gap-4 text-center text-xs font-bold text-slate-600">
+                    <div>
+                        <p class="mb-8">توقيع أمين المخزن</p>
+                        <p class="border-t border-slate-300 pt-1">.......................</p>
+                    </div>
+                    <div>
+                        <p class="mb-8">توقيع مدير الإنتاج والجودة</p>
+                        <p class="border-t border-slate-300 pt-1">.......................</p>
+                    </div>
+                    <div>
+                        <p class="mb-8">توقيع المندوب / المستلم</p>
+                        <p class="border-t border-slate-300 pt-1">.......................</p>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('printableVoucherModal').classList.remove('hidden');
+        }
+
+        function getVoucherTypeBadge(type) {
+            const badges = {
+                'RECEIPT': '<span class="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-[11px] font-bold">استلام توريد</span>',
+                'PRODUCTION': '<span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[11px] font-bold">تحضير وجبة</span>',
+                'TRANSFER': '<span class="bg-violet-50 text-violet-700 px-2 py-0.5 rounded text-[11px] font-bold">تحويل مخزني</span>',
+                'ISSUE': '<span class="bg-cyan-50 text-cyan-700 px-2 py-0.5 rounded text-[11px] font-bold">صرف وتوزيع</span>',
+                'WASTE': '<span class="bg-rose-50 text-rose-700 px-2 py-0.5 rounded text-[11px] font-bold">إتلاف أطعمة</span>',
+                'ADJUSTMENT_ADD': '<span class="bg-amber-50 text-amber-700 px-2 py-0.5 rounded text-[11px] font-bold">تسوية زيادة</span>',
+                'ADJUSTMENT_SUB': '<span class="bg-rose-50 text-rose-700 px-2 py-0.5 rounded text-[11px] font-bold">تسوية عجز</span>'
+            };
+            return badges[type] || type;
+        }
+
+        function getVoucherTypeName(type) {
+            const names = {
+                'RECEIPT': 'سند استلام مواد خام (GRV)',
+                'PRODUCTION': 'أمر إنتاج وتحضير وجبات (PROD)',
+                'TRANSFER': 'سند تحويل بين المخازن (TRF)',
+                'ISSUE': 'سند صرف وتوزيع وجبات (ISU)',
+                'WASTE': 'سند إتلاف مواد غذائية (WST)',
+                'ADJUSTMENT_ADD': 'سند تسوية جردية - إضافة',
+                'ADJUSTMENT_SUB': 'سند تسوية جردية - خصم'
+            };
+            return names[type] || type;
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function showToast(title, message) {
+            const toast = document.getElementById('toastNotification');
+            document.getElementById('toastTitle').innerText = title;
+            document.getElementById('toastMessage').innerText = message;
+
+            toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+            }, 3500);
+        }
+
+        function setupClock() {
+            const update = () => {
+                const now = new Date();
+                document.getElementById('liveClock').innerText = now.toLocaleTimeString('ar-KW');
+                document.getElementById('liveDate').innerText = now.toLocaleDateString('ar-KW', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            };
+            update();
+            setInterval(update, 1000);
+        }
+
+        function setupMobileMenu() {
+            const btn = document.getElementById('mobileMenuBtn');
+            const sidebar = document.getElementById('sidebar');
+            btn.addEventListener('click', () => {
+                sidebar.classList.toggle('hidden');
+            });
+        }
+    </script>
+</body>
+</html>
