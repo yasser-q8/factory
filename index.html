@@ -101,6 +101,20 @@
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col selection:bg-choco-600 selection:text-white">
 
+    <!-- Hourly Backup Warning Banner -->
+    <div id="hourlyBackupBanner" class="bg-amber-500 text-slate-900 px-4 py-2.5 text-xs font-bold shadow-md flex items-center justify-between border-b border-amber-600 hidden z-50">
+        <div class="flex items-center gap-2">
+            <i class="fa-solid fa-triangle-exclamation text-slate-900 text-base animate-bounce"></i>
+            <span>تنبيـه هام: لم يتم أخذ نسخة احتياطية لبيانات المحل منذ أكثر من ساعة! يُنصح بتنزيل النسخة الاحتياطية الآن لحفظ البيانات.</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <button onclick="downloadBackup()" class="bg-slate-900 text-white hover:bg-slate-800 px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                <i class="fa-solid fa-download"></i> تنزيل نسخة الآن
+            </button>
+            <button onclick="dismissBackupBanner()" class="text-slate-900 hover:text-black p-1 text-sm"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+    </div>
+
     <!-- Header / Navbar -->
     <header class="bg-choco-900 text-white shadow-lg sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -125,18 +139,31 @@
                 </div>
 
                 <!-- Clock & Quick System Tools -->
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-3">
                     <div class="hidden lg:flex flex-col text-left text-xs text-amber-200 bg-choco-800/80 px-3 py-1.5 rounded-lg border border-choco-700">
                         <span id="liveClock" class="font-bold text-amber-100 font-mono text-sm">--:--:--</span>
                         <span id="liveDate" class="text-amber-300">--</span>
                     </div>
 
                     <div class="flex items-center gap-2">
-                        <button onclick="resetToDemoData()" title="إعادة تحميل المنيو والبيانات" class="bg-choco-800 hover:bg-choco-700 text-amber-300 px-3 py-1.5 rounded-lg text-xs font-semibold border border-choco-700 flex items-center gap-1.5 transition">
-                            <i class="fa-solid fa-rotate-right"></i>
-                            <span class="hidden sm:inline">إعادة ضبط المنيو</span>
+                        <!-- Backup Export/Import Buttons -->
+                        <button onclick="downloadBackup()" title="تنزيل نسخة احتياطية" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                            <i class="fa-solid fa-download"></i>
+                            <span class="hidden sm:inline">نسخة احتياطية</span>
                         </button>
-                        <div class="bg-choco-800 border border-choco-700 px-3 py-1.5 rounded-lg text-xs font-bold text-amber-200">
+                        
+                        <label title="استعادة نسخة احتياطية" class="bg-indigo-700 hover:bg-indigo-600 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer">
+                            <i class="fa-solid fa-upload"></i>
+                            <span class="hidden sm:inline">استعادة</span>
+                            <input type="file" id="restoreFileInput" accept=".json" onchange="restoreBackup(event)" class="hidden">
+                        </label>
+
+                        <button onclick="resetToDemoData()" title="إعادة تحميل المنيو والبيانات" class="bg-choco-800 hover:bg-choco-700 text-amber-300 px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-choco-700 flex items-center gap-1 transition">
+                            <i class="fa-solid fa-rotate-right"></i>
+                            <span class="hidden sm:inline">ضبط المنيو</span>
+                        </button>
+                        
+                        <div class="bg-choco-800 border border-choco-700 px-2.5 py-1.5 rounded-lg text-xs font-bold text-amber-200">
                             العملة: <span class="text-emerald-400 font-black">د.ك</span>
                         </div>
                     </div>
@@ -303,7 +330,7 @@
                                     <th class="p-3">المصدر / العميل / القسم</th>
                                     <th class="p-3">عدد البنود</th>
                                     <th class="p-3">إجمالي التكلفة/المبلغ</th>
-                                    <th class="p-3 text-center">الإجراء</th>
+                                    <th class="p-3 text-center">الإجراء والتحكم</th>
                                 </tr>
                             </thead>
                             <tbody id="recentVouchersTable" class="divide-y divide-slate-100">
@@ -319,7 +346,7 @@
                 <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                         <h2 class="text-lg font-bold text-slate-800">قائمة أصناف محل فوندان شوكو (Fondant Choco)</h2>
-                        <p class="text-xs text-slate-500 mt-0.5">تسجيل وتعديل الأصناف والشوكولاتة الفاخرة، الموالح، والأصناف الفردية وطبقاً لأحدث تحديثات طلبات</p>
+                        <p class="text-xs text-slate-500 mt-0.5">تسجيل الشوكولاتة، الموالح، وسعر البيع وتكلفة المكونات ومجمل الربح لكل صنف</p>
                     </div>
                     <div class="flex items-center gap-2">
                         <button onclick="openItemModal('raw')" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm">
@@ -351,12 +378,15 @@
                         <table class="w-full text-right text-xs">
                             <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
                                 <tr>
-                                    <th class="p-3.5">الكود</th>
-                                    <th class="p-3.5">اسم الصنف والتفاصيل</th>
-                                    <th class="p-3.5">التصنيف</th>
+                                    <!-- Column Widths Adjusted: Code and Category increased by 50% -->
+                                    <th class="p-3.5" style="min-width: 140px; width: 14%;">الكود</th>
+                                    <th class="p-3.5" style="width: 22%;">اسم الصنف والتفاصيل</th>
+                                    <th class="p-3.5" style="min-width: 180px; width: 18%;">التصنيف</th>
                                     <th class="p-3.5">الوحدة</th>
-                                    <th class="p-3.5">السعر / التكلفة (د.ك)</th>
-                                    <th class="p-3.5">الرصيد الحكلي الحالي</th>
+                                    <th class="p-3.5">سعر البيع (د.ك)</th>
+                                    <th class="p-3.5">تكلفة المكونات/الشراء</th>
+                                    <th class="p-3.5">مجمل الربح</th>
+                                    <th class="p-3.5">الرصيد الحكلي</th>
                                     <th class="p-3.5">الحد الأدنى</th>
                                     <th class="p-3.5 text-center">العمليات</th>
                                 </tr>
@@ -374,7 +404,7 @@
                 <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                         <h2 class="text-lg font-bold text-slate-800">إدارة وصفات وتحضير الحلويات والموالح (BOM Recipes)</h2>
-                        <p class="text-xs text-slate-500 mt-0.5">تحديد خامات الشوكولاتة، الحشوات، والمكونات الدقيقة لكل صنف في منيو فوندان شوكو</p>
+                        <p class="text-xs text-slate-500 mt-0.5">تحديد خامات الشوكولاتة، الحشوات، والمكونات الدقيقة لجميع الأصناف الـ 15 بالمحل</p>
                     </div>
                     <button onclick="openBomModal()" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm">
                         <i class="fa-solid fa-scroll"></i>
@@ -399,6 +429,8 @@
                     </div>
 
                     <form id="productionForm" onsubmit="handleExecuteProduction(event)" class="space-y-6">
+                        <input type="hidden" id="editingVoucherId" value="">
+
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 mb-1.5">اختر الصنف المراد تحضيره *</label>
@@ -467,12 +499,14 @@
                     <div class="border-b border-slate-100 pb-4 mb-4 flex items-center justify-between">
                         <div>
                             <h2 class="text-lg font-bold text-slate-800">سند استلام خامات وشوكولاتة (Goods Receipt)</h2>
-                            <p class="text-xs text-slate-500 mt-0.5">تسجيل توريد شحنات الشوكولاتة البلجيكية والسويسرية والمكسرات والتغليف وتحديث الأرصدة</p>
+                            <p class="text-xs text-slate-500 mt-0.5">تسجيل توريد شحنات الشوكولاتة والتغليف وحساب متوسط السعر المرجح آلياً</p>
                         </div>
                         <span class="text-xs font-mono font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg">GRV-FONDANT</span>
                     </div>
 
                     <form id="receiptVoucherForm" onsubmit="handleSaveReceiptVoucher(event)" class="space-y-5">
+                        <input type="hidden" id="rcptEditingVoucherId" value="">
+
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 mb-1">المورد *</label>
@@ -544,6 +578,8 @@
                     </div>
 
                     <form id="transferForm" onsubmit="handleExecuteTransfer(event)" class="space-y-5">
+                        <input type="hidden" id="trfEditingVoucherId" value="">
+
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 mb-1">من مخزن / قسم (المصدر) *</label>
@@ -612,6 +648,8 @@
                     </div>
 
                     <form id="issueForm" onsubmit="handleExecuteIssue(event)" class="space-y-5">
+                        <input type="hidden" id="issueEditingVoucherId" value="">
+
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 mb-1">العميل / طلبات / الفرع *</label>
@@ -670,6 +708,8 @@
                     </div>
 
                     <form id="wasteForm" onsubmit="handleExecuteWaste(event)" class="space-y-5">
+                        <input type="hidden" id="wasteEditingVoucherId" value="">
+
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 mb-1">نوع الحركة *</label>
@@ -752,7 +792,7 @@
                         </div>
                         <div>
                             <span class="text-amber-300 block mb-0.5">الرصيد الحكلي الحالي:</span>
-                            <span id="ldgCurrentStock" class="font-black text-base text-emerald-400">0</span>
+                            <span id="ldgCurrentStock" class="font-black text-base text-emerald-400 font-mono">0</span>
                         </div>
                     </div>
                 </div>
@@ -774,7 +814,7 @@
                                     <th class="p-3 text-emerald-600">وارد (+)</th>
                                     <th class="p-3 text-rose-600">صادر (-)</th>
                                     <th class="p-3 text-indigo-900 font-black">الرصيد المتبقي التراكمي</th>
-                                    <th class="p-3 text-center">معاينة</th>
+                                    <th class="p-3 text-center">التحكم</th>
                                 </tr>
                             </thead>
                             <tbody id="ledgerHistoryTable" class="divide-y divide-slate-100">
@@ -836,6 +876,8 @@
                         <select id="itemUnit" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-semibold">
                             <option value="علبة">علبة / صندوق</option>
                             <option value="حبة">حبة / قطعة</option>
+                            <option value="طبق">طبق</option>
+                            <option value="صندوق">صندوق</option>
                             <option value="كجم">كجم (Kilogram)</option>
                             <option value="لتر">لتر (Liter)</option>
                         </select>
@@ -846,9 +888,15 @@
                     </div>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">السعر / التكلفة (د.ك) *</label>
-                    <input type="number" step="0.001" id="itemCostPrice" min="0" value="5.000" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-choco-600">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">سعر البيع للجمهور (د.ك)</label>
+                        <input type="number" step="0.001" id="itemSellingPrice" min="0" value="0.000" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-emerald-700">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">تكلفة الشراء/الخام (د.ك)</label>
+                        <input type="number" step="0.001" id="itemCostPrice" min="0" value="1.000" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-choco-600">
+                    </div>
                 </div>
 
                 <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
@@ -933,10 +981,8 @@
     <!-- Application JavaScript Code -->
     <script>
 
-        // Key for localStorage persistence
-        const STORAGE_KEY = 'FONDANT_CHOCO_KWT_DB_V2';
+        const STORAGE_KEY = 'FONDANT_CHOCO_KWT_DB_V3';
 
-        // Warehouses list initialized
         const WAREHOUSES = {
             'wh1': { id: 'wh1', name: 'مخزن المواد الخام الرئيسي', type: 'raw' },
             'wh2': { id: 'wh2', name: 'مطبخ التحضير والحلويات', type: 'kitchen' },
@@ -945,157 +991,109 @@
             'wh5': { id: 'wh5', name: 'قسم طلبات والتوصيل أونلاين', type: 'distribution' }
         };
 
-        // Application State Container
         let appState = {
             items: [],
             boms: [],
-            vouchers: []
+            vouchers: [],
+            lastBackupTime: null
         };
 
-        // Chart Instance
         let chartInstance = null;
 
-        // Initialize App on DOM Load
         window.addEventListener('DOMContentLoaded', () => {
             loadDatabase();
             setupClock();
             switchTab('dashboard');
             setupMobileMenu();
+            checkBackupStatus();
+            setInterval(checkBackupStatus, 60000); // Check backup status every minute
         });
+
+        // Convert any Arabic numerals to ASCII numbers (0-9)
+        function toEnglishDigits(str) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+        }
 
         function getSeedData() {
             return {
+                lastBackupTime: Date.now(),
                 items: [
                     // --- RAW MATERIALS (مواد خام وحشوات) ---
-                    { id: 'RM001', code: 'RM-101', name: 'شوكولاتة بلجيكية فاخرة (خام)', category: 'شوكولاتة وخامات', type: 'raw', unit: 'كجم', minStock: 50, costPrice: 3.500, stock: { wh1: 200, wh2: 50 }, totalStock: 250 },
-                    { id: 'RM002', code: 'RM-102', name: 'شوكولاتة سويسرية (خام)', category: 'شوكولاتة وخامات', type: 'raw', unit: 'كجم', minStock: 40, costPrice: 4.000, stock: { wh1: 150, wh2: 30 }, totalStock: 180 },
-                    { id: 'RM003', code: 'RM-103', name: 'حشوات نوتيلا وكندر وكراميل', category: 'حشوات وصوصات', type: 'raw', unit: 'كجم', minStock: 30, costPrice: 2.200, stock: { wh1: 100, wh2: 20 }, totalStock: 120 },
-                    { id: 'RM004', code: 'RM-104', name: 'مكسرات وبيكان جاف', category: 'مكسرات وإضافات', type: 'raw', unit: 'كجم', minStock: 25, costPrice: 5.000, stock: { wh1: 15, wh2: 5 }, totalStock: 20 }, // Low stock
-                    { id: 'RM005', code: 'RM-105', name: 'بسكويت وعجين كوكيز ودونت', category: 'مخبوزات وعجين', type: 'raw', unit: 'كجم', minStock: 60, costPrice: 1.200, stock: { wh1: 180, wh2: 40 }, totalStock: 220 },
-                    { id: 'RM006', code: 'RM-106', name: 'صناديق وعلب فوندان شوكو الفاخرة', category: 'تغليف وتعبئة', type: 'raw', unit: 'علبة', minStock: 200, costPrice: 0.350, stock: { wh1: 1000, wh2: 200 }, totalStock: 1200 },
-                    { id: 'RM007', code: 'RM-107', name: 'توت وفواكه طازجة (بيري)', category: 'مكسرات وإضافات', type: 'raw', unit: 'كجم', minStock: 15, costPrice: 2.800, stock: { wh1: 40, wh2: 10 }, totalStock: 50 },
-                    { id: 'RM008', code: 'RM-108', name: 'حشوات موالح ودجاج مسخن وخضار', category: 'فطاير وموالح', type: 'raw', unit: 'كجم', minStock: 20, costPrice: 1.800, stock: { wh1: 60, wh2: 15 }, totalStock: 75 },
+                    { id: 'RM001', code: 'RM-101', name: 'شوكولاتة بلجيكية فاخرة (خام)', category: 'شوكولاتة وخامات', type: 'raw', unit: 'كجم', minStock: 50, costPrice: 3.500, sellingPrice: 0, stock: { wh1: 200, wh2: 50 }, totalStock: 250 },
+                    { id: 'RM002', code: 'RM-102', name: 'شوكولاتة سويسرية (خام)', category: 'شوكولاتة وخامات', type: 'raw', unit: 'كجم', minStock: 40, costPrice: 4.000, sellingPrice: 0, stock: { wh1: 150, wh2: 30 }, totalStock: 180 },
+                    { id: 'RM003', code: 'RM-103', name: 'حشوات نوتيلا وكندر وكراميل', category: 'حشوات وصوصات', type: 'raw', unit: 'كجم', minStock: 30, costPrice: 2.200, sellingPrice: 0, stock: { wh1: 100, wh2: 20 }, totalStock: 120 },
+                    { id: 'RM004', code: 'RM-104', name: 'مكسرات وبيكان جاف', category: 'مكسرات وإضافات', type: 'raw', unit: 'كجم', minStock: 25, costPrice: 5.000, sellingPrice: 0, stock: { wh1: 15, wh2: 5 }, totalStock: 20 },
+                    { id: 'RM005', code: 'RM-105', name: 'بسكويت وعجين كوكيز ودونت', category: 'مخبوزات وعجين', type: 'raw', unit: 'كجم', minStock: 60, costPrice: 1.200, sellingPrice: 0, stock: { wh1: 180, wh2: 40 }, totalStock: 220 },
+                    { id: 'RM006', code: 'RM-106', name: 'صناديق وعلب فوندان شوكو الفاخرة', category: 'تغليف وتعبئة', type: 'raw', unit: 'علبة', minStock: 200, costPrice: 0.350, sellingPrice: 0, stock: { wh1: 1000, wh2: 200 }, totalStock: 1200 },
+                    { id: 'RM007', code: 'RM-107', name: 'توت وفواكه طازجة (بيري)', category: 'مكسرات وإضافات', type: 'raw', unit: 'كجم', minStock: 15, costPrice: 2.800, sellingPrice: 0, stock: { wh1: 40, wh2: 10 }, totalStock: 50 },
+                    { id: 'RM008', code: 'RM-108', name: 'حشوات موالح ودجاج مسخن وخضار', category: 'فطاير وموالح', type: 'raw', unit: 'كجم', minStock: 20, costPrice: 1.800, sellingPrice: 0, stock: { wh1: 60, wh2: 15 }, totalStock: 75 },
+                    { id: 'RM009', code: 'RM-109', name: 'زعتر ومشروم وخلطة بيتزا', category: 'فطاير وموالح', type: 'raw', unit: 'كجم', minStock: 20, costPrice: 1.500, sellingPrice: 0, stock: { wh1: 50, wh2: 15 }, totalStock: 65 },
+                    { id: 'RM010', code: 'RM-110', name: 'عجينة كرول فاخرة', category: 'مخبوزات وعجين', type: 'raw', unit: 'حبة', minStock: 100, costPrice: 0.500, sellingPrice: 0, stock: { wh1: 300, wh2: 50 }, totalStock: 350 },
 
-                    // --- FINISHED MENU ITEMS (قائمة طلبات - فوندان شوكو) ---
+                    // --- ALL 15 FINISHED MENU ITEMS FROM TALABAT ---
                     // الشوكولاتة والحلويات الفاخرة
-                    { id: 'FM001', code: 'FC-001', name: 'شوكولا سويسرية', description: 'حشوة كركو سالت كراميل، بيكان، وترافيل مهلبية', category: 'شوكولاتة فاخرة', type: 'meal', unit: 'علبة', costPrice: 9.750, stock: { wh3: 40, wh5: 15 }, totalStock: 55 },
-                    { id: 'FM002', code: 'FC-002', name: 'دونت شوكو بيري', description: 'دونتس مع الشوكولاتة والبيري', category: 'حلويات وكيك', type: 'meal', unit: 'علبة', costPrice: 9.500, stock: { wh3: 30, wh5: 10 }, totalStock: 40 },
-                    { id: 'FM003', code: 'FC-003', name: 'تاكو ميكس بوكي', description: '25 حبة تاكو بـ 5 حشوات (مسقعة باذنجان، خضار بالكريمة، بطاطا حارة، بطاط هندي، مشروم بالكريمة والذرة)', category: 'فطاير وموالح', type: 'meal', unit: 'صندوق', costPrice: 8.000, stock: { wh3: 25, wh5: 10 }, totalStock: 35 },
-                    { id: 'FM004', code: 'FC-004', name: 'ميني كوكيز', description: 'ميني كوكيز بالحشوة (كندر ونوتيلا)', category: 'حلويات وكيك', type: 'meal', unit: 'علبة', costPrice: 7.750, stock: { wh3: 50, wh5: 20 }, totalStock: 70 },
-                    { id: 'FM005', code: 'FC-005', name: 'ميكس شوكليت', description: 'صندوق شوكولاتة مشكل مع 4 اختيارات', category: 'شوكولاتة فاخرة', type: 'meal', unit: 'صندوق', costPrice: 7.500, stock: { wh3: 35, wh5: 15 }, totalStock: 50 },
-                    { id: 'FM006', code: 'FC-006', name: 'شوكليت مكسر', description: 'شوكليت مكسر مع المكسرات', category: 'شوكولاتة فاخرة', type: 'meal', unit: 'علبة', costPrice: 7.500, stock: { wh3: 45, wh5: 15 }, totalStock: 60 },
-                    { id: 'FM007', code: 'FC-007', name: 'كراون سويت', description: 'شوكولاتة بلجيكية فاخرة بحشوات متنوعة', category: 'شوكولاتة فاخرة', type: 'meal', unit: 'علبة', costPrice: 6.750, stock: { wh3: 40, wh5: 12 }, totalStock: 52 },
-                    { id: 'FM008', code: 'FC-008', name: 'شوكولاتة بلجيكية', description: '35 حبة بحشوات فاخرة مختلفة', category: 'شوكولاتة فاخرة', type: 'meal', unit: 'علبة', costPrice: 6.750, stock: { wh3: 60, wh5: 25 }, totalStock: 85 },
-                    { id: 'FM009', code: 'FC-009', name: 'نوتيلا كندر', description: 'شوكولاتة بحشوة النوتيلا والكندر', category: 'شوكولاتة فاخرة', type: 'meal', unit: 'علبة', costPrice: 6.750, stock: { wh3: 30, wh5: 10 }, totalStock: 40 },
-                    { id: 'FM010', code: 'FC-010', name: 'كندر سويت', description: 'طبقات من البسكويت والصوص السري بطعم الكندر', category: 'حلويات وكيك', type: 'meal', unit: 'علبة', costPrice: 6.500, stock: { wh3: 35, wh5: 15 }, totalStock: 50 },
-                    { id: 'FM011', code: 'FC-011', name: 'حلا البسكوت الأصلي', description: 'طبقات من البسكويت مع الصوص السري', category: 'حلويات وكيك', type: 'meal', unit: 'علبة', costPrice: 6.000, stock: { wh3: 40, wh5: 10 }, totalStock: 50 },
+                    { id: 'FM001', code: 'FC-001', name: 'شوكولا سويسرية', description: 'حشوة كركو سالت كراميل، بيكان، وترافيل مهلبية', category: 'شوكولاتة فاخرة', type: 'meal', unit: 'علبة', sellingPrice: 9.750, costPrice: 3.290, stock: { wh3: 40, wh5: 15 }, totalStock: 55 },
+                    { id: 'FM002', code: 'FC-002', name: 'دونت شوكو بيري', description: 'دونتس مع الشوكولاتة والبيري', category: 'حلويات وكيك', type: 'meal', unit: 'علبة', sellingPrice: 9.500, costPrice: 1.950, stock: { wh3: 30, wh5: 10 }, totalStock: 40 },
+                    { id: 'FM003', code: 'FC-003', name: 'تاكو ميكس بوكي', description: '25 حبة تاكو بـ 5 حشوات (مسقعة باذنجان، خضار بالكريمة، بطاطا حارة، بطاط هندي، مشروم بالكريمة والذرة)', category: 'فطاير وموالح', type: 'meal', unit: 'صندوق', sellingPrice: 8.000, costPrice: 2.270, stock: { wh3: 25, wh5: 10 }, totalStock: 35 },
+                    { id: 'FM004', code: 'FC-004', name: 'ميني كوكيز', description: 'ميني كوكيز بالحشوة (كندر ونوتيلا)', category: 'حلويات وكيك', type: 'meal', unit: 'علبة', sellingPrice: 7.750, costPrice: 1.610, stock: { wh3: 50, wh5: 20 }, totalStock: 70 },
+                    { id: 'FM005', code: 'FC-005', name: 'ميكس شوكليت', description: 'صندوق شوكولاتة مشكل مع 4 اختيارات', category: 'شوكولاتة فاخرة', type: 'meal', unit: 'صندوق', sellingPrice: 7.500, costPrice: 3.040, stock: { wh3: 35, wh5: 15 }, totalStock: 50 },
+                    { id: 'FM006', code: 'FC-006', name: 'شوكليت مكسر', description: 'شوكليت مكسر مع المكسرات', category: 'شوكولاتة فاخرة', type: 'meal', unit: 'علبة', sellingPrice: 7.500, costPrice: 3.100, stock: { wh3: 45, wh5: 15 }, totalStock: 60 },
+                    { id: 'FM007', code: 'FC-007', name: 'كراون سويت', description: 'شوكولاتة بلجيكية فاخرة بحشوات متنوعة', category: 'شوكولاتة فاخرة', type: 'meal', unit: 'علبة', sellingPrice: 6.750, costPrice: 2.300, stock: { wh3: 40, wh5: 12 }, totalStock: 52 },
+                    { id: 'FM008', code: 'FC-008', name: 'شوكولاتة بلجيكية', description: '35 حبة بحشوات فاخرة مختلفة', category: 'شوكولاتة فاخرة', type: 'meal', unit: 'علبة', sellingPrice: 6.750, costPrice: 2.890, stock: { wh3: 60, wh5: 25 }, totalStock: 85 },
+                    { id: 'FM009', code: 'FC-009', name: 'نوتيلا كندر', description: 'شوكولاتة بحشوة النوتيلا والكندر', category: 'شوكولاتة فاخرة', type: 'meal', unit: 'علبة', sellingPrice: 6.750, costPrice: 2.520, stock: { wh3: 30, wh5: 10 }, totalStock: 40 },
+                    { id: 'FM010', code: 'FC-010', name: 'كندر سويت', description: 'طبقات من البسكويت والصوص السري بطعم الكندر', category: 'حلويات وكيك', type: 'meal', unit: 'علبة', sellingPrice: 6.500, costPrice: 1.490, stock: { wh3: 35, wh5: 15 }, totalStock: 50 },
+                    { id: 'FM011', code: 'FC-011', name: 'حلا البسكوت الأصلي', description: 'طبقات من البسكويت مع الصوص السري', category: 'حلويات وكيك', type: 'meal', unit: 'علبة', sellingPrice: 6.000, costPrice: 1.500, stock: { wh3: 40, wh5: 10 }, totalStock: 50 },
 
                     // الفطاير والموالح
-                    { id: 'FM012', code: 'FC-012', name: 'مسخن', description: 'مسخن يحضر طازجًا', category: 'فطاير وموالح', type: 'meal', unit: 'طبق', costPrice: 5.750, stock: { wh3: 20, wh5: 10 }, totalStock: 30 },
-                    { id: 'FM013', code: 'FC-013', name: 'فطاير ميني ميكس', description: 'ميكس زعتر، مشروم، وبيتزا (تحضير خلال ساعة)', category: 'فطاير وموالح', type: 'meal', unit: 'صندوق', costPrice: 5.500, stock: { wh3: 25, wh5: 12 }, totalStock: 37 },
+                    { id: 'FM012', code: 'FC-012', name: 'مسخن', description: 'مسخن يحضر طازجًا', category: 'فطاير وموالح', type: 'meal', unit: 'طبق', sellingPrice: 5.750, costPrice: 1.970, stock: { wh3: 20, wh5: 10 }, totalStock: 30 },
+                    { id: 'FM013', code: 'FC-013', name: 'فطاير ميني ميكس', description: 'ميكس زعتر، مشروم، وبيتزا (تحضير خلال ساعة)', category: 'فطاير وموالح', type: 'meal', unit: 'صندوق', sellingPrice: 5.500, costPrice: 1.610, stock: { wh3: 25, wh5: 12 }, totalStock: 37 },
 
                     // أصناف الفردية (الأفراد)
-                    { id: 'FM014', code: 'FC-014', name: 'كرول نوتيلا', description: 'كرول بحشوة النوتيلا الغنية', category: 'أصناف فردية', type: 'meal', unit: 'حبة', costPrice: 2.000, stock: { wh3: 80, wh5: 30 }, totalStock: 110 },
-                    { id: 'FM015', code: 'FC-015', name: 'كرول كندر', description: 'كرول بحشوة الكندر اللذيذة', category: 'أصناف فردية', type: 'meal', unit: 'حبة', costPrice: 2.000, stock: { wh3: 75, wh5: 25 }, totalStock: 100 }
+                    { id: 'FM014', code: 'FC-014', name: 'كرول نوتيلا', description: 'كرول بحشوة النوتيلا الغنية', category: 'أصناف فردية', type: 'meal', unit: 'حبة', sellingPrice: 2.000, costPrice: 0.676, stock: { wh3: 80, wh5: 30 }, totalStock: 110 },
+                    { id: 'FM015', code: 'FC-015', name: 'كرول كندر', description: 'كرول بحشوة الكندر اللذيذة', category: 'أصناف فردية', type: 'meal', unit: 'حبة', sellingPrice: 2.000, costPrice: 0.676, stock: { wh3: 75, wh5: 25 }, totalStock: 100 }
                 ],
+                // COMPLETE BOM RECIPES FOR ALL 15 MENU ITEMS
                 boms: [
-                    {
-                        id: 'BOM001',
-                        mealId: 'FM001',
-                        mealName: 'شوكولا سويسرية',
-                        ingredients: [
-                            { rawId: 'RM002', qty: 0.500 }, // 500g Swiss Chocolate
-                            { rawId: 'RM003', qty: 0.200 }, // 200g Caramel & Truffle fill
-                            { rawId: 'RM004', qty: 0.100 }, // 100g Pecan
-                            { rawId: 'RM006', qty: 1.000 }  // 1 Box
-                        ]
-                    },
-                    {
-                        id: 'BOM002',
-                        mealId: 'FM002',
-                        mealName: 'دونت شوكو بيري',
-                        ingredients: [
-                            { rawId: 'RM005', qty: 0.400 },
-                            { rawId: 'RM001', qty: 0.200 },
-                            { rawId: 'RM007', qty: 0.150 },
-                            { rawId: 'RM006', qty: 1.000 }
-                        ]
-                    },
-                    {
-                        id: 'BOM003',
-                        mealId: 'FM003',
-                        mealName: 'تاكو ميكس بوكي',
-                        ingredients: [
-                            { rawId: 'RM008', qty: 0.800 },
-                            { rawId: 'RM005', qty: 0.400 },
-                            { rawId: 'RM006', qty: 1.000 }
-                        ]
-                    },
-                    {
-                        id: 'BOM004',
-                        mealId: 'FM004',
-                        mealName: 'ميني كوكيز',
-                        ingredients: [
-                            { rawId: 'RM005', qty: 0.400 },
-                            { rawId: 'RM003', qty: 0.200 },
-                            { rawId: 'RM006', qty: 1.000 }
-                        ]
-                    },
-                    {
-                        id: 'BOM005',
-                        mealId: 'FM008',
-                        mealName: 'شوكولاتة بلجيكية',
-                        ingredients: [
-                            { rawId: 'RM001', qty: 0.600 },
-                            { rawId: 'RM003', qty: 0.200 },
-                            { rawId: 'RM006', qty: 1.000 }
-                        ]
-                    },
-                    {
-                        id: 'BOM006',
-                        mealId: 'FM012',
-                        mealName: 'مسخن',
-                        ingredients: [
-                            { rawId: 'RM008', qty: 0.700 },
-                            { rawId: 'RM005', qty: 0.300 },
-                            { rawId: 'RM006', qty: 1.000 }
-                        ]
-                    },
-                    {
-                        id: 'BOM007',
-                        mealId: 'FM014',
-                        mealName: 'كرول نوتيلا',
-                        ingredients: [
-                            { rawId: 'RM005', qty: 0.100 },
-                            { rawId: 'RM003', qty: 0.050 }
-                        ]
-                    }
+                    { id: 'BOM001', mealId: 'FM001', mealName: 'شوكولا سويسرية', ingredients: [{ rawId: 'RM002', qty: 0.500 }, { rawId: 'RM003', qty: 0.200 }, { rawId: 'RM004', qty: 0.100 }, { rawId: 'RM006', qty: 1.000 }] },
+                    { id: 'BOM002', mealId: 'FM002', mealName: 'دونت شوكو بيري', ingredients: [{ rawId: 'RM005', qty: 0.400 }, { rawId: 'RM001', qty: 0.200 }, { rawId: 'RM007', qty: 0.150 }, { rawId: 'RM006', qty: 1.000 }] },
+                    { id: 'BOM003', mealId: 'FM003', mealName: 'تاكو ميكس بوكي', ingredients: [{ rawId: 'RM008', qty: 0.800 }, { rawId: 'RM005', qty: 0.400 }, { rawId: 'RM006', qty: 1.000 }] },
+                    { id: 'BOM004', mealId: 'FM004', mealName: 'ميني كوكيز', ingredients: [{ rawId: 'RM005', qty: 0.500 }, { rawId: 'RM003', qty: 0.300 }, { rawId: 'RM006', qty: 1.000 }] },
+                    { id: 'BOM005', mealId: 'FM005', mealName: 'ميكس شوكليت', ingredients: [{ rawId: 'RM001', qty: 0.300 }, { rawId: 'RM002', qty: 0.300 }, { rawId: 'RM003', qty: 0.200 }, { rawId: 'RM006', qty: 1.000 }] },
+                    { id: 'BOM006', mealId: 'FM006', mealName: 'شوكليت مكسر', ingredients: [{ rawId: 'RM001', qty: 0.500 }, { rawId: 'RM004', qty: 0.200 }, { rawId: 'RM006', qty: 1.000 }] },
+                    { id: 'BOM007', mealId: 'FM007', mealName: 'كراون سويت', ingredients: [{ rawId: 'RM001', qty: 0.400 }, { rawId: 'RM003', qty: 0.250 }, { rawId: 'RM006', qty: 1.000 }] },
+                    { id: 'BOM008', mealId: 'FM008', mealName: 'شوكولاتة بلجيكية', ingredients: [{ rawId: 'RM001', qty: 0.600 }, { rawId: 'RM003', qty: 0.200 }, { rawId: 'RM006', qty: 1.000 }] },
+                    { id: 'BOM009', mealId: 'FM009', mealName: 'نوتيلا كندر', ingredients: [{ rawId: 'RM001', qty: 0.400 }, { rawId: 'RM003', qty: 0.350 }, { rawId: 'RM006', qty: 1.000 }] },
+                    { id: 'BOM010', mealId: 'FM010', mealName: 'كندر سويت', ingredients: [{ rawId: 'RM005', qty: 0.400 }, { rawId: 'RM003', qty: 0.300 }, { rawId: 'RM006', qty: 1.000 }] },
+                    { id: 'BOM011', mealId: 'FM011', mealName: 'حلا البسكوت الأصلي', ingredients: [{ rawId: 'RM005', qty: 0.500 }, { rawId: 'RM003', qty: 0.250 }, { rawId: 'RM006', qty: 1.000 }] },
+                    { id: 'BOM012', mealId: 'FM012', mealName: 'مسخن', ingredients: [{ rawId: 'RM008', qty: 0.700 }, { rawId: 'RM005', qty: 0.300 }, { rawId: 'RM006', qty: 1.000 }] },
+                    { id: 'BOM013', mealId: 'FM013', mealName: 'فطاير ميني ميكس', ingredients: [{ rawId: 'RM009', qty: 0.600 }, { rawId: 'RM005', qty: 0.300 }, { rawId: 'RM006', qty: 1.000 }] },
+                    { id: 'BOM014', mealId: 'FM014', mealName: 'كرول نوتيلا', ingredients: [{ rawId: 'RM010', qty: 1.000 }, { rawId: 'RM003', qty: 0.080 }] },
+                    { id: 'BOM015', mealId: 'FM015', mealName: 'كرول كندر', ingredients: [{ rawId: 'RM010', qty: 1.000 }, { rawId: 'RM003', qty: 0.080 }] }
                 ],
                 vouchers: [
                     {
                         id: 'V-1001',
                         voucherNo: 'GRV-2026-001',
                         type: 'RECEIPT',
-                        date: new Date().toISOString().split('T')[0],
+                        date: '2026-09-28',
                         supplier: 'شركة الشوكولاتة البلجيكية العالمية',
                         targetWh: 'wh1',
-                        items: [
-                            { itemId: 'RM001', itemName: 'شوكولاتة بلجيكية فاخرة (خام)', qty: 100, price: 3.500, total: 350.000 }
-                        ],
+                        items: [{ itemId: 'RM001', itemName: 'شوكولاتة بلجيكية فاخرة (خام)', qty: 100, price: 3.500, total: 350.000 }],
                         totalAmount: 350.000,
-                        notes: 'توريد شحنة مواد وخامات الشوكولاتة والحلويات'
+                        notes: 'توريد شحنة مواد وخامات الشوكولاتة'
                     },
                     {
                         id: 'V-1002',
                         voucherNo: 'PROD-2026-001',
                         type: 'PRODUCTION',
-                        date: new Date().toISOString().split('T')[0],
+                        date: '2026-09-28',
                         mealId: 'FM001',
                         mealName: 'شوكولا سويسرية',
                         producedQty: 20,
                         targetWh: 'wh3',
-                        totalAmount: 130.000,
-                        notes: 'تحضير وتجهيز علب شوكولا سويسرية لتوصيل طلبات'
+                        totalAmount: 65.800,
+                        notes: 'تحضير وتجهيز علب شوكولا سويسرية'
                     }
                 ]
             };
@@ -1121,12 +1119,83 @@
         }
 
         function resetToDemoData() {
-            if (confirm("هل أنت تأكد من إعادة ضبط البيانات وتعيين منيو فوندان شوكو الرسمي؟")) {
+            if (confirm("هل أنت تأكد من إعادة ضبط البيانات وتعيين منيو فوندان شوكو الرسمي بالكامل؟")) {
                 appState = getSeedData();
                 saveDatabase();
-                showToast("تم الضبط", "تمت إعادة تعيين منيو فوندان شوكو بنجاح");
+                showToast("تم الضبط", "تمت إعادة تعيين المنيو بنجاح");
                 location.reload();
             }
+        }
+
+        // Backup & Restore Functions
+        function downloadBackup() {
+            appState.lastBackupTime = Date.now();
+            saveDatabase();
+            checkBackupStatus();
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
+            const downloadAnchor = document.createElement('a');
+            const fileName = `fondant_choco_backup_${new Date().toISOString().split('T')[0]}.json`;
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", fileName);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+
+            showToast("تم التنزيل", "تم تنزيل ملف النسخة الاحتياطية بنجاح");
+        }
+
+        function restoreBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedState = JSON.parse(e.target.result);
+                    if (importedState && importedState.items && importedState.boms && importedState.vouchers) {
+                        appState = importedState;
+                        appState.lastBackupTime = Date.now();
+                        saveDatabase();
+                        showToast("تمت الاستعادة", "تمت استعادة البيانات بنجاح من الملف");
+                        location.reload();
+                    } else {
+                        alert("ملف غير صالح! يرجى اختيار ملف نسخة احتياطية صحيح للنظام.");
+                    }
+                } catch (err) {
+                    alert("حدث خطأ أثناء قراءة الملف. يرجى التأكد من صحة الملف.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function checkBackupStatus() {
+            const banner = document.getElementById('hourlyBackupBanner');
+            const oneHour = 3600000; // 1 hour in ms
+            if (!appState.lastBackupTime || (Date.now() - appState.lastBackupTime) > oneHour) {
+                banner.classList.remove('hidden');
+            } else {
+                banner.classList.add('hidden');
+            }
+        }
+
+        function dismissBackupBanner() {
+            document.getElementById('hourlyBackupBanner').classList.add('hidden');
+        }
+
+        // Calculation Helpers for Financial Metrics
+        function getItemBomCost(itemId) {
+            const bom = appState.boms.find(b => b.mealId === itemId);
+            if (!bom) return 0;
+
+            let total = 0;
+            bom.ingredients.forEach(ing => {
+                const raw = appState.items.find(r => r.id === ing.rawId);
+                if (raw) {
+                    total += (raw.costPrice || 0) * ing.qty;
+                }
+            });
+            return total;
         }
 
         function switchTab(tabId) {
@@ -1143,7 +1212,6 @@
                 activeBtn.classList.add('bg-amber-50', 'text-amber-900', 'border-r-4', 'border-amber-600');
             }
 
-            // Refresh specific tab views
             if (tabId === 'dashboard') renderDashboard();
             if (tabId === 'items') renderItemsTable();
             if (tabId === 'bom') renderBomGrid();
@@ -1161,12 +1229,11 @@
             const lowStockItems = appState.items.filter(i => (i.totalStock || 0) <= i.minStock);
             const vouchersCount = appState.vouchers.length;
 
-            document.getElementById('statRawCount').innerText = rawCount;
-            document.getElementById('statMealCount').innerText = mealCount;
-            document.getElementById('statLowStockCount').innerText = lowStockItems.length;
-            document.getElementById('statVouchersCount').innerText = vouchersCount;
+            document.getElementById('statRawCount').innerText = toEnglishDigits(rawCount);
+            document.getElementById('statMealCount').innerText = toEnglishDigits(mealCount);
+            document.getElementById('statLowStockCount').innerText = toEnglishDigits(lowStockItems.length);
+            document.getElementById('statVouchersCount').innerText = toEnglishDigits(vouchersCount);
 
-            // Render Low stock list
             const lowContainer = document.getElementById('lowStockList');
             if (lowStockItems.length === 0) {
                 lowContainer.innerHTML = `<div class="p-4 text-center text-xs text-slate-400 font-semibold bg-slate-50 rounded-xl">جميع الخامات متوفرة بكفاية فوق الحد الأدنى</div>`;
@@ -1175,17 +1242,16 @@
                     <div class="flex items-center justify-between p-2.5 rounded-xl bg-rose-50 border border-rose-100 text-xs">
                         <div>
                             <p class="font-bold text-rose-900">${item.name}</p>
-                            <span class="text-[10px] text-rose-600 font-mono">${item.code} - الحد الأدنى: ${item.minStock} ${item.unit}</span>
+                            <span class="text-[10px] text-rose-600 font-mono">${item.code} - الحد الأدنى: ${toEnglishDigits(item.minStock)} ${item.unit}</span>
                         </div>
                         <div class="text-left">
-                            <span class="font-black text-rose-700 text-sm">${item.totalStock || 0}</span>
+                            <span class="font-black text-rose-700 text-sm font-mono">${toEnglishDigits(item.totalStock || 0)}</span>
                             <span class="text-[10px] text-rose-600 font-bold block">${item.unit}</span>
                         </div>
                     </div>
                 `).join('');
             }
 
-            // Render Recent Vouchers
             const recentTable = document.getElementById('recentVouchersTable');
             const sorted = [...appState.vouchers].reverse().slice(0, 5);
             if (sorted.length === 0) {
@@ -1195,18 +1261,18 @@
                     <tr class="hover:bg-slate-50">
                         <td class="p-3 font-mono font-bold text-slate-700">${v.voucherNo}</td>
                         <td class="p-3">${getVoucherTypeBadge(v.type)}</td>
-                        <td class="p-3 text-slate-500 font-mono">${v.date}</td>
+                        <td class="p-3 text-slate-500 font-mono">${toEnglishDigits(v.date)}</td>
                         <td class="p-3 font-semibold">${v.supplier || v.entity || WAREHOUSES[v.targetWh]?.name || 'فوندان شوكو'}</td>
-                        <td class="p-3 font-bold">${v.items ? v.items.length : 1}</td>
-                        <td class="p-3 font-bold text-slate-800">${(v.totalAmount || 0).toFixed(3)} د.ك</td>
-                        <td class="p-3 text-center">
+                        <td class="p-3 font-bold font-mono">${toEnglishDigits(v.items ? v.items.length : 1)}</td>
+                        <td class="p-3 font-bold text-slate-800 font-mono">${toEnglishDigits((v.totalAmount || 0).toFixed(3))} د.ك</td>
+                        <td class="p-3 text-center flex justify-center gap-1">
                             <button onclick='previewVoucherModal("${v.id}")' class="text-indigo-600 hover:text-indigo-800 font-bold bg-indigo-50 px-2 py-1 rounded">معاينة</button>
+                            <button onclick='editVoucher("${v.id}")' class="text-amber-600 hover:text-amber-800 font-bold bg-amber-50 px-2 py-1 rounded"><i class="fa-solid fa-pen"></i> تعديل</button>
                         </td>
                     </tr>
                 `).join('');
             }
 
-            // Render Chart.js
             renderOperationsChart();
         }
 
@@ -1257,32 +1323,59 @@
             });
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-400 font-semibold">لم يتم العثور على أصناف مطابقة</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="10" class="p-6 text-center text-slate-400 font-semibold">لم يتم العثور على أصناف مطابقة</td></tr>`;
                 return;
             }
 
             tbody.innerHTML = filtered.map(item => {
                 const isLow = (item.totalStock || 0) <= item.minStock;
+                
+                // Financial Metrics Calculation
+                let displayCost = item.costPrice || 0;
+                let sellingPrice = item.sellingPrice || 0;
+                let profit = 0;
+                let marginPercent = 0;
+
+                if (item.type === 'meal') {
+                    displayCost = getItemBomCost(item.id);
+                    profit = sellingPrice - displayCost;
+                    marginPercent = sellingPrice > 0 ? ((profit / sellingPrice) * 100).toFixed(1) : 0;
+                }
+
                 return `
                     <tr class="hover:bg-slate-50 border-b border-slate-100">
-                        <td class="p-3.5 font-mono font-bold text-slate-600">${item.code}</td>
+                        <td class="p-3.5 font-mono font-bold text-slate-600" style="min-width: 140px;">${item.code}</td>
                         <td class="p-3.5 font-bold text-slate-800">
                             <div>${item.name}</div>
                             ${item.description ? `<div class="text-[11px] text-slate-500 font-normal mt-0.5">${item.description}</div>` : ''}
                         </td>
-                        <td class="p-3.5">
+                        <td class="p-3.5" style="min-width: 180px;">
                             <span class="px-2.5 py-1 rounded-md text-[11px] font-bold ${item.type === 'raw' ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-choco-50 text-choco-800 border border-choco-200'}">
                                 ${item.category}
                             </span>
                         </td>
                         <td class="p-3.5 font-semibold text-slate-600">${item.unit}</td>
-                        <td class="p-3.5 font-black text-slate-800 text-sm">${(item.costPrice || 0).toFixed(3)} د.ك</td>
+                        
+                        <td class="p-3.5 font-black text-emerald-700 font-mono">
+                            ${item.type === 'meal' ? toEnglishDigits(sellingPrice.toFixed(3)) + ' د.ك' : '--'}
+                        </td>
+                        
+                        <td class="p-3.5 font-bold text-choco-800 font-mono">
+                            ${toEnglishDigits(displayCost.toFixed(3))} د.ك
+                        </td>
+                        
+                        <td class="p-3.5 font-bold font-mono">
+                            ${item.type === 'meal' ? 
+                                `<span class="${profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}">${toEnglishDigits(profit.toFixed(3))} د.ك (${toEnglishDigits(marginPercent)}%)</span>` : 
+                                '--'}
+                        </td>
+
                         <td class="p-3.5">
-                            <span class="font-black ${isLow ? 'text-rose-600 bg-rose-50 px-2 py-1 rounded-lg border border-rose-200' : 'text-slate-800'}">
-                                ${item.totalStock || 0} ${item.unit}
+                            <span class="font-black font-mono ${isLow ? 'text-rose-600 bg-rose-50 px-2 py-1 rounded-lg border border-rose-200' : 'text-slate-800'}">
+                                ${toEnglishDigits(item.totalStock || 0)} ${item.unit}
                             </span>
                         </td>
-                        <td class="p-3.5 text-slate-500 font-semibold">${item.minStock} ${item.unit}</td>
+                        <td class="p-3.5 text-slate-500 font-semibold font-mono">${toEnglishDigits(item.minStock)} ${item.unit}</td>
                         <td class="p-3.5 text-center">
                             <button onclick="editItem('${item.id}')" class="text-choco-600 hover:text-choco-800 font-bold p-1"><i class="fa-solid fa-pen-to-square"></i></button>
                         </td>
@@ -1306,7 +1399,8 @@
                     document.getElementById('itemCategory').value = item.category;
                     document.getElementById('itemUnit').value = item.unit;
                     document.getElementById('itemMinStock').value = item.minStock;
-                    document.getElementById('itemCostPrice').value = item.costPrice;
+                    document.getElementById('itemCostPrice').value = item.costPrice || 0;
+                    document.getElementById('itemSellingPrice').value = item.sellingPrice || 0;
                 }
             } else {
                 document.getElementById('itemModalTitle').innerText = type === 'raw' ? 'تعريف خامات جديدة' : 'تعريف صنف منيو جديد (فوندان شوكو)';
@@ -1332,6 +1426,7 @@
             const unit = document.getElementById('itemUnit').value;
             const minStock = parseFloat(document.getElementById('itemMinStock').value) || 0;
             const costPrice = parseFloat(document.getElementById('itemCostPrice').value) || 0;
+            const sellingPrice = parseFloat(document.getElementById('itemSellingPrice').value) || 0;
 
             if (id) {
                 const existing = appState.items.find(i => i.id === id);
@@ -1343,6 +1438,7 @@
                     existing.unit = unit;
                     existing.minStock = minStock;
                     existing.costPrice = costPrice;
+                    existing.sellingPrice = sellingPrice;
                 }
             } else {
                 const newItem = {
@@ -1355,6 +1451,7 @@
                     unit,
                     minStock,
                     costPrice,
+                    sellingPrice,
                     stock: { wh1: 0, wh2: 0, wh3: 0, wh4: 0, wh5: 0 },
                     totalStock: 0
                 };
@@ -1364,7 +1461,7 @@
             saveDatabase();
             closeModal('itemModal');
             renderItemsTable();
-            showToast('تم الحفظ', 'تم حفظ بيانات الصنف بنجاح في المنظومة');
+            showToast('تم الحفظ', 'تم حفظ بيانات الصنف بنجاح');
         }
 
         function renderBomGrid() {
@@ -1376,18 +1473,23 @@
 
             container.innerHTML = appState.boms.map(bom => {
                 const meal = appState.items.find(i => i.id === bom.mealId);
+                const sellingPrice = meal ? (meal.sellingPrice || 0) : 0;
                 let estCost = 0;
+
                 const ingredientsList = bom.ingredients.map(ing => {
                     const raw = appState.items.find(r => r.id === ing.rawId);
-                    const cost = raw ? (raw.costPrice * ing.qty) : 0;
+                    const cost = raw ? ((raw.costPrice || 0) * ing.qty) : 0;
                     estCost += cost;
                     return `
                         <div class="flex items-center justify-between py-1 text-xs border-b border-slate-100 last:border-0">
                             <span class="font-bold text-slate-700">${raw ? raw.name : 'مادة محذوفة'}</span>
-                            <span class="font-mono bg-slate-100 px-2 py-0.5 rounded text-slate-600">${ing.qty} ${raw ? raw.unit : ''}</span>
+                            <span class="font-mono bg-slate-100 px-2 py-0.5 rounded text-slate-600">${toEnglishDigits(ing.qty)} ${raw ? raw.unit : ''}</span>
                         </div>
                     `;
                 }).join('');
+
+                const profit = sellingPrice - estCost;
+                const marginPercent = sellingPrice > 0 ? ((profit / sellingPrice) * 100).toFixed(1) : 0;
 
                 return `
                     <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 space-y-4 flex flex-col justify-between">
@@ -1397,12 +1499,20 @@
                                     <i class="fa-solid fa-cookie-bite text-amber-500"></i>
                                     ${bom.mealName}
                                 </h3>
-                                <span class="text-xs font-black bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-lg">
-                                    تكلفة الخامات: ${estCost.toFixed(3)} د.ك
-                                </span>
+                                <div class="text-left">
+                                    <span class="text-xs font-black bg-amber-50 text-amber-900 border border-amber-200 px-2.5 py-1 rounded-lg block font-mono">
+                                        تكلفة الخامات: ${toEnglishDigits(estCost.toFixed(3))} د.ك
+                                    </span>
+                                </div>
                             </div>
+                            
+                            <div class="mt-2 text-xs flex justify-between font-bold bg-slate-50 p-2 rounded-xl">
+                                <span>سعر البيع: <span class="text-emerald-700 font-mono">${toEnglishDigits(sellingPrice.toFixed(3))} د.ك</span></span>
+                                <span>مجمل الربح: <span class="text-indigo-700 font-mono">${toEnglishDigits(profit.toFixed(3))} د.ك (${toEnglishDigits(marginPercent)}%)</span></span>
+                            </div>
+
                             <div class="mt-3 space-y-1">
-                                <span class="text-[11px] font-bold text-slate-400 block mb-2">المكونات والخامات القياسية للقطعة/العلبة:</span>
+                                <span class="text-[11px] font-bold text-slate-400 block mb-2">المكونات القياسية للصنف:</span>
                                 ${ingredientsList}
                             </div>
                         </div>
@@ -1419,7 +1529,7 @@
         function openBomModal(bomId = null) {
             const mealSelect = document.getElementById('bomMealSelect');
             const meals = appState.items.filter(i => i.type === 'meal');
-            mealSelect.innerHTML = meals.map(m => `<option value="${m.id}">${m.name} (${m.code}) - ${m.costPrice} د.ك</option>`).join('');
+            mealSelect.innerHTML = meals.map(m => `<option value="${m.id}">${m.name} (${m.code}) - سعر البيع: ${toEnglishDigits((m.sellingPrice || 0).toFixed(3))} د.ك</option>`).join('');
 
             const container = document.getElementById('bomIngredientsContainer');
             container.innerHTML = '';
@@ -1495,10 +1605,14 @@
                 appState.boms.push(bomObj);
             }
 
+            // Recalculate and update costPrice for finished meal
+            meal.costPrice = getItemBomCost(mealId);
+
             saveDatabase();
             closeModal('bomModal');
             renderBomGrid();
-            showToast('تم الحفظ', 'تم حفظ وصفة الريسبي بنجاح');
+            renderItemsTable();
+            showToast('تم الحفظ', 'تم حفظ وصفة الريسبي وتحديث التكاليف بنجاح');
         }
 
         function populateProductionMealSelect() {
@@ -1516,14 +1630,14 @@
 
             if (!mealId || qty <= 0) {
                 previewContainer.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">يرجى تحديد الصنف والكمية لإجراء تحليل الرصيد والمكونات</td></tr>`;
-                totalCostDisplay.innerText = '0.000';
+                totalCostDisplay.innerText = toEnglishDigits('0.000');
                 return;
             }
 
             const bom = appState.boms.find(b => b.mealId === mealId);
             if (!bom) {
                 previewContainer.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-rose-500 font-bold">لا توجد وصفة (BOM) مسجلة لهذا الصنف! يرجى إعداد الوصفة أولاً.</td></tr>`;
-                totalCostDisplay.innerText = '0.000';
+                totalCostDisplay.innerText = toEnglishDigits('0.000');
                 return;
             }
 
@@ -1537,15 +1651,15 @@
                 const isSufficient = currentStock >= totalNeeded;
                 if (!isSufficient) allAvailable = false;
 
-                const cost = raw ? (raw.costPrice * totalNeeded) : 0;
+                const cost = raw ? ((raw.costPrice || 0) * totalNeeded) : 0;
                 batchTotalCost += cost;
 
                 return `
                     <tr class="hover:bg-slate-50 border-b border-slate-100">
                         <td class="p-2.5 font-bold text-slate-800">${raw ? raw.name : 'مادة مفقودة'}</td>
-                        <td class="p-2.5 font-mono text-slate-600">${ing.qty} ${raw ? raw.unit : ''}</td>
-                        <td class="p-2.5 font-bold font-mono text-indigo-700">${totalNeeded.toFixed(2)} ${raw ? raw.unit : ''}</td>
-                        <td class="p-2.5 font-bold font-mono">${currentStock} ${raw ? raw.unit : ''}</td>
+                        <td class="p-2.5 font-mono text-slate-600">${toEnglishDigits(ing.qty)} ${raw ? raw.unit : ''}</td>
+                        <td class="p-2.5 font-bold font-mono text-indigo-700">${toEnglishDigits(totalNeeded.toFixed(2))} ${raw ? raw.unit : ''}</td>
+                        <td class="p-2.5 font-bold font-mono">${toEnglishDigits(currentStock)} ${raw ? raw.unit : ''}</td>
                         <td class="p-2.5">
                             ${isSufficient ? 
                                 `<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded text-[11px] font-bold"><i class="fa-solid fa-check"></i> متوفر</span>` : 
@@ -1557,11 +1671,16 @@
             }).join('');
 
             previewContainer.innerHTML = html;
-            totalCostDisplay.innerText = batchTotalCost.toFixed(3);
+            totalCostDisplay.innerText = toEnglishDigits(batchTotalCost.toFixed(3));
         }
 
         function handleExecuteProduction(e) {
             e.preventDefault();
+            const editingVoucherId = document.getElementById('editingVoucherId').value;
+            if (editingVoucherId) {
+                rollbackVoucherStock(editingVoucherId);
+            }
+
             const mealId = document.getElementById('prodMealSelect').value;
             const qty = parseFloat(document.getElementById('prodQuantity').value) || 0;
             const targetWh = document.getElementById('prodTargetWarehouse').value;
@@ -1569,7 +1688,6 @@
             const bom = appState.boms.find(b => b.mealId === mealId);
             if (!bom || qty <= 0) return;
 
-            // Stock availability validation
             for (let ing of bom.ingredients) {
                 const raw = appState.items.find(r => r.id === ing.rawId);
                 const totalNeeded = ing.qty * qty;
@@ -1579,12 +1697,11 @@
                 }
             }
 
-            // Deduct Raw Materials & Add Finished Meals
             let batchCost = 0;
             bom.ingredients.forEach(ing => {
                 const raw = appState.items.find(r => r.id === ing.rawId);
                 const needed = ing.qty * qty;
-                batchCost += (raw.costPrice * needed);
+                batchCost += ((raw.costPrice || 0) * needed);
 
                 if (!raw.stock) raw.stock = {};
                 let remainingToDeduct = needed;
@@ -1600,43 +1717,55 @@
                 raw.totalStock = Object.values(raw.stock).reduce((a, b) => a + b, 0);
             });
 
-            // Add Finished Meal to Target Wh
             const meal = appState.items.find(i => i.id === mealId);
             if (!meal.stock) meal.stock = {};
             meal.stock[targetWh] = (meal.stock[targetWh] || 0) + qty;
             meal.totalStock = Object.values(meal.stock).reduce((a, b) => a + b, 0);
 
-            // Log Voucher
-            const vNo = 'PROD-' + Date.now().toString().substr(-6);
-            const voucher = {
-                id: 'V-' + Date.now(),
-                voucherNo: vNo,
-                type: 'PRODUCTION',
-                date: new Date().toISOString().split('T')[0],
-                mealId,
-                mealName: meal.name,
-                producedQty: qty,
-                targetWh,
-                totalAmount: batchCost,
-                notes: `تحضير عدد ${qty} ${meal.unit} (${meal.name}) وتنظيف المواد الخام من المخزن`
-            };
+            if (editingVoucherId) {
+                const idx = appState.vouchers.findIndex(v => v.id === editingVoucherId);
+                if (idx >= 0) {
+                    appState.vouchers[idx].mealId = mealId;
+                    appState.vouchers[idx].mealName = meal.name;
+                    appState.vouchers[idx].producedQty = qty;
+                    appState.vouchers[idx].targetWh = targetWh;
+                    appState.vouchers[idx].totalAmount = batchCost;
+                    appState.vouchers[idx].notes = `[معدل] تحضير عدد ${qty} ${meal.unit}`;
+                }
+                document.getElementById('editingVoucherId').value = '';
+                showToast('تم التعديل', 'تم تعديل سند الإنتاج وتحديث الأرصدة');
+            } else {
+                const vNo = 'PROD-' + Date.now().toString().substr(-6);
+                const voucher = {
+                    id: 'V-' + Date.now(),
+                    voucherNo: vNo,
+                    type: 'PRODUCTION',
+                    date: new Date().toISOString().split('T')[0],
+                    mealId,
+                    mealName: meal.name,
+                    producedQty: qty,
+                    targetWh,
+                    totalAmount: batchCost,
+                    notes: `تحضير عدد ${qty} ${meal.unit} (${meal.name})`
+                };
+                appState.vouchers.push(voucher);
+                showToast('تم التحضير', `تم تحضير ${qty} ${meal.unit} (${meal.name}) وخصم الخامات آلياً`);
+            }
 
-            appState.vouchers.push(voucher);
             saveDatabase();
-
-            showToast('تم التحضير', `تم تحضير ${qty} ${meal.unit} (${meal.name}) وخصم الخامات آلياً`);
             document.getElementById('productionForm').reset();
             calculateProductionRequirements();
         }
 
         function initReceiptForm() {
             document.getElementById('rcptDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('rcptEditingVoucherId').value = '';
             const container = document.getElementById('receiptRowsContainer');
             container.innerHTML = '';
             addReceiptRow();
         }
 
-        function addReceiptRow() {
+        function addReceiptRow(itemId = '', qty = 10, price = 3.500) {
             const container = document.getElementById('receiptRowsContainer');
             const rawItems = appState.items.filter(i => i.type === 'raw');
             const rowId = 'rcpt-row-' + Date.now() + Math.random().toString(36).substr(2, 4);
@@ -1647,14 +1776,14 @@
             tr.innerHTML = `
                 <td class="p-2">
                     <select onchange="updateReceiptRowPrice('${rowId}')" class="rcpt-item-select w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-semibold">
-                        ${rawItems.map(i => `<option value="${i.id}" data-price="${i.costPrice}">${i.name} (${i.code})</option>`).join('')}
+                        ${rawItems.map(i => `<option value="${i.id}" data-price="${i.costPrice}" ${i.id === itemId ? 'selected' : ''}>${i.name} (${i.code})</option>`).join('')}
                     </select>
                 </td>
                 <td class="p-2">
-                    <input type="number" step="any" min="0.001" value="10" oninput="calcReceiptTotal()" class="rcpt-qty-input w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold text-center">
+                    <input type="number" step="any" min="0.001" value="${qty}" oninput="calcReceiptTotal()" class="rcpt-qty-input w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold text-center">
                 </td>
                 <td class="p-2">
-                    <input type="number" step="0.001" min="0" value="3.500" oninput="calcReceiptTotal()" class="rcpt-price-input w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold text-center">
+                    <input type="number" step="0.001" min="0" value="${price}" oninput="calcReceiptTotal()" class="rcpt-price-input w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold text-center">
                 </td>
                 <td class="p-2 font-bold font-mono text-choco-600 text-center text-xs rcpt-row-total">
                     0.000
@@ -1664,7 +1793,7 @@
                 </td>
             `;
             container.appendChild(tr);
-            updateReceiptRowPrice(rowId);
+            if (!price || price === 3.500) updateReceiptRowPrice(rowId);
             calcReceiptTotal();
         }
 
@@ -1686,14 +1815,19 @@
                 const qty = parseFloat(tr.querySelector('.rcpt-qty-input').value) || 0;
                 const price = parseFloat(tr.querySelector('.rcpt-price-input').value) || 0;
                 const total = qty * price;
-                tr.querySelector('.rcpt-row-total').innerText = total.toFixed(3);
+                tr.querySelector('.rcpt-row-total').innerText = toEnglishDigits(total.toFixed(3));
                 grandTotal += total;
             });
-            document.getElementById('rcptGrandTotal').innerText = grandTotal.toFixed(3);
+            document.getElementById('rcptGrandTotal').innerText = toEnglishDigits(grandTotal.toFixed(3));
         }
 
         function handleSaveReceiptVoucher(e) {
             e.preventDefault();
+            const editingVoucherId = document.getElementById('rcptEditingVoucherId').value;
+            if (editingVoucherId) {
+                rollbackVoucherStock(editingVoucherId);
+            }
+
             const supplier = document.getElementById('rcptSupplier').value;
             const targetWh = document.getElementById('rcptTargetWarehouse').value;
             const date = document.getElementById('rcptDate').value;
@@ -1701,6 +1835,7 @@
 
             const items = [];
             let grandTotal = 0;
+            let weightedPriceMessages = [];
 
             document.querySelectorAll('#receiptRowsContainer tr').forEach(tr => {
                 const itemId = tr.querySelector('.rcpt-item-select').value;
@@ -1713,10 +1848,21 @@
                     grandTotal += total;
                     items.push({ itemId, itemName: item ? item.name : '', qty, price, total });
 
+                    // WEIGHTED AVERAGE COST CALCULATION (متوسط السعر المرجح)
+                    const oldStock = item.totalStock || 0;
+                    const oldPrice = item.costPrice || 0;
+
+                    if (oldStock > 0 && Math.abs(oldPrice - price) > 0.0001) {
+                        const newWeightedPrice = ((oldStock * oldPrice) + (qty * price)) / (oldStock + qty);
+                        item.costPrice = parseFloat(newWeightedPrice.toFixed(3));
+                        weightedPriceMessages.push(`${item.name}: من ${toEnglishDigits(oldPrice.toFixed(3))} إلى ${toEnglishDigits(item.costPrice.toFixed(3))} د.ك`);
+                    } else {
+                        item.costPrice = price;
+                    }
+
                     if (!item.stock) item.stock = {};
                     item.stock[targetWh] = (item.stock[targetWh] || 0) + qty;
                     item.totalStock = Object.values(item.stock).reduce((a, b) => a + b, 0);
-                    item.costPrice = price;
                 }
             });
 
@@ -1725,27 +1871,46 @@
                 return;
             }
 
-            const voucher = {
-                id: 'V-' + Date.now(),
-                voucherNo: 'GRV-' + Date.now().toString().substr(-6),
-                type: 'RECEIPT',
-                supplier,
-                targetWh,
-                date,
-                items,
-                totalAmount: grandTotal,
-                notes
-            };
+            if (editingVoucherId) {
+                const idx = appState.vouchers.findIndex(v => v.id === editingVoucherId);
+                if (idx >= 0) {
+                    appState.vouchers[idx].supplier = supplier;
+                    appState.vouchers[idx].targetWh = targetWh;
+                    appState.vouchers[idx].date = date;
+                    appState.vouchers[idx].items = items;
+                    appState.vouchers[idx].totalAmount = grandTotal;
+                    appState.vouchers[idx].notes = notes;
+                }
+                document.getElementById('rcptEditingVoucherId').value = '';
+                showToast('تم تعديل السند', 'تم تعديل سند الاستلام وتحديث متوسط الأسعار والأرصدة');
+            } else {
+                const voucher = {
+                    id: 'V-' + Date.now(),
+                    voucherNo: 'GRV-' + Date.now().toString().substr(-6),
+                    type: 'RECEIPT',
+                    supplier,
+                    targetWh,
+                    date,
+                    items,
+                    totalAmount: grandTotal,
+                    notes
+                };
+                appState.vouchers.push(voucher);
 
-            appState.vouchers.push(voucher);
+                let toastMsg = 'تم تسجيل سند الاستلام وتحديث الأرصدة بالمخزن';
+                if (weightedPriceMessages.length > 0) {
+                    toastMsg += ' (تم تحديث متوسط السعر المرجح: ' + weightedPriceMessages.join(' | ') + ')';
+                }
+                showToast('تم التوريد', toastMsg);
+            }
+
             saveDatabase();
-
-            showToast('تم التوريد', 'تم تسجيل سند استلام الخامات وتحديث الرصيد بالمخزن');
             initReceiptForm();
         }
 
         function populateTransferForm() {
             document.getElementById('trfDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('trfEditingVoucherId').value = '';
             populateTransferItems();
         }
 
@@ -1761,7 +1926,7 @@
             if (availableItems.length === 0) {
                 select.innerHTML = `<option value="">لا توجد أصناف متوفرة في هذا المخزن</option>`;
             } else {
-                select.innerHTML = availableItems.map(i => `<option value="${i.id}">${i.name} (${i.code}) - المتاح: ${i.stock[sourceWh]} ${i.unit}</option>`).join('');
+                select.innerHTML = availableItems.map(i => `<option value="${i.id}">${i.name} (${i.code}) - المتاح: ${toEnglishDigits(i.stock[sourceWh])} ${i.unit}</option>`).join('');
             }
             updateTransferMaxQty();
         }
@@ -1775,7 +1940,7 @@
             const item = appState.items.find(i => i.id === itemId);
             if (item) {
                 const avail = item.stock ? (item.stock[sourceWh] || 0) : 0;
-                hint.innerText = `الرصيد المتاح بالمخزن المصدر: ${avail} ${item.unit}`;
+                hint.innerText = `الرصيد المتاح بالمخزن المصدر: ${toEnglishDigits(avail)} ${item.unit}`;
                 unitBadge.innerText = item.unit;
             } else {
                 hint.innerText = 'الرصيد المتاح: 0';
@@ -1785,6 +1950,11 @@
 
         function handleExecuteTransfer(e) {
             e.preventDefault();
+            const editingVoucherId = document.getElementById('trfEditingVoucherId').value;
+            if (editingVoucherId) {
+                rollbackVoucherStock(editingVoucherId);
+            }
+
             const sourceWh = document.getElementById('trfSourceWh').value;
             const targetWh = document.getElementById('trfTargetWh').value;
             const date = document.getElementById('trfDate').value;
@@ -1809,28 +1979,42 @@
             item.stock[sourceWh] -= qty;
             item.stock[targetWh] = (item.stock[targetWh] || 0) + qty;
 
-            const voucher = {
-                id: 'V-' + Date.now(),
-                voucherNo: 'TRF-' + Date.now().toString().substr(-6),
-                type: 'TRANSFER',
-                sourceWh,
-                targetWh,
-                date,
-                items: [{ itemId, itemName: item.name, qty, unit: item.unit }],
-                totalAmount: item.costPrice * qty,
-                notes
-            };
+            if (editingVoucherId) {
+                const idx = appState.vouchers.findIndex(v => v.id === editingVoucherId);
+                if (idx >= 0) {
+                    appState.vouchers[idx].sourceWh = sourceWh;
+                    appState.vouchers[idx].targetWh = targetWh;
+                    appState.vouchers[idx].date = date;
+                    appState.vouchers[idx].items = [{ itemId, itemName: item.name, qty, unit: item.unit }];
+                    appState.vouchers[idx].totalAmount = (item.costPrice || 0) * qty;
+                    appState.vouchers[idx].notes = notes;
+                }
+                document.getElementById('trfEditingVoucherId').value = '';
+                showToast('تم التعديل', 'تم تعديل سند التحويل بنجاح');
+            } else {
+                const voucher = {
+                    id: 'V-' + Date.now(),
+                    voucherNo: 'TRF-' + Date.now().toString().substr(-6),
+                    type: 'TRANSFER',
+                    sourceWh,
+                    targetWh,
+                    date,
+                    items: [{ itemId, itemName: item.name, qty, unit: item.unit }],
+                    totalAmount: (item.costPrice || 0) * qty,
+                    notes
+                };
+                appState.vouchers.push(voucher);
+                showToast('تم التحويل', 'تم نقل الرصيد بين الأقسام بنجاح');
+            }
 
-            appState.vouchers.push(voucher);
             saveDatabase();
-
-            showToast('تم التحويل', 'تم نقل الرصيد بين الأقسام بنجاح');
             document.getElementById('transferForm').reset();
             populateTransferForm();
         }
 
         function populateIssueForm() {
             document.getElementById('issueDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('issueEditingVoucherId').value = '';
             populateIssueItems();
         }
 
@@ -1846,7 +2030,7 @@
             if (availableItems.length === 0) {
                 select.innerHTML = `<option value="">لا توجد أصناف متوفرة بالمخزن</option>`;
             } else {
-                select.innerHTML = availableItems.map(i => `<option value="${i.id}">${i.name} (${i.code}) - المتاح: ${i.stock[sourceWh]} ${i.unit}</option>`).join('');
+                select.innerHTML = availableItems.map(i => `<option value="${i.id}">${i.name} (${i.code}) - المتاح: ${toEnglishDigits(i.stock[sourceWh])} ${i.unit}</option>`).join('');
             }
             updateIssueMaxQty();
         }
@@ -1859,7 +2043,7 @@
             const item = appState.items.find(i => i.id === itemId);
             if (item) {
                 const avail = item.stock ? (item.stock[sourceWh] || 0) : 0;
-                hint.innerText = `الرصيد المتاح للصرف: ${avail} ${item.unit}`;
+                hint.innerText = `الرصيد المتاح للصرف: ${toEnglishDigits(avail)} ${item.unit}`;
             } else {
                 hint.innerText = 'الرصيد المتاح: 0';
             }
@@ -1867,6 +2051,11 @@
 
         function handleExecuteIssue(e) {
             e.preventDefault();
+            const editingVoucherId = document.getElementById('issueEditingVoucherId').value;
+            if (editingVoucherId) {
+                rollbackVoucherStock(editingVoucherId);
+            }
+
             const entity = document.getElementById('issueEntity').value;
             const sourceWh = document.getElementById('issueSourceWh').value;
             const date = document.getElementById('issueDate').value;
@@ -1886,38 +2075,57 @@
             item.stock[sourceWh] -= qty;
             item.totalStock = Object.values(item.stock).reduce((a, b) => a + b, 0);
 
-            const voucher = {
-                id: 'V-' + Date.now(),
-                voucherNo: 'ISU-' + Date.now().toString().substr(-6),
-                type: 'ISSUE',
-                entity,
-                sourceWh,
-                date,
-                items: [{ itemId, itemName: item.name, qty, unit: item.unit }],
-                totalAmount: item.costPrice * qty,
-                notes
-            };
+            if (editingVoucherId) {
+                const idx = appState.vouchers.findIndex(v => v.id === editingVoucherId);
+                if (idx >= 0) {
+                    appState.vouchers[idx].entity = entity;
+                    appState.vouchers[idx].sourceWh = sourceWh;
+                    appState.vouchers[idx].date = date;
+                    appState.vouchers[idx].items = [{ itemId, itemName: item.name, qty, unit: item.unit }];
+                    appState.vouchers[idx].totalAmount = (item.sellingPrice || item.costPrice || 0) * qty;
+                    appState.vouchers[idx].notes = notes;
+                }
+                document.getElementById('issueEditingVoucherId').value = '';
+                showToast('تم التعديل', 'تم تعديل سند الصرف والتسليم بنجاح');
+            } else {
+                const voucher = {
+                    id: 'V-' + Date.now(),
+                    voucherNo: 'ISU-' + Date.now().toString().substr(-6),
+                    type: 'ISSUE',
+                    entity,
+                    sourceWh,
+                    date,
+                    items: [{ itemId, itemName: item.name, qty, unit: item.unit }],
+                    totalAmount: (item.sellingPrice || item.costPrice || 0) * qty,
+                    notes
+                };
+                appState.vouchers.push(voucher);
+                showToast('تم الصرف', 'تمت عملية تسليم طلبية الحلويات وتحديث الرصيد');
+            }
 
-            appState.vouchers.push(voucher);
             saveDatabase();
-
-            showToast('تم الصرف', 'تمت عملية تسليم طلبية الحلويات وتحديث الرصيد');
             document.getElementById('issueForm').reset();
             populateIssueForm();
         }
 
         function populateWasteForm() {
             document.getElementById('wasteDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('wasteEditingVoucherId').value = '';
             populateWasteItems();
         }
 
         function populateWasteItems() {
             const select = document.getElementById('wasteItemSelect');
-            select.innerHTML = appState.items.map(i => `<option value="${i.id}">${i.name} (${i.code}) - الرصيد الحكلي: ${i.totalStock || 0} ${i.unit}</option>`).join('');
+            select.innerHTML = appState.items.map(i => `<option value="${i.id}">${i.name} (${i.code}) - الرصيد الحكلي: ${toEnglishDigits(i.totalStock || 0)} ${i.unit}</option>`).join('');
         }
 
         function handleExecuteWaste(e) {
             e.preventDefault();
+            const editingVoucherId = document.getElementById('wasteEditingVoucherId').value;
+            if (editingVoucherId) {
+                rollbackVoucherStock(editingVoucherId);
+            }
+
             const type = document.getElementById('wasteType').value;
             const wh = document.getElementById('wasteWh').value;
             const date = document.getElementById('wasteDate').value;
@@ -1943,23 +2151,168 @@
 
             item.totalStock = Object.values(item.stock).reduce((a, b) => a + b, 0);
 
-            const voucher = {
-                id: 'V-' + Date.now(),
-                voucherNo: (type === 'WASTE' ? 'WST-' : 'ADJ-') + Date.now().toString().substr(-6),
-                type,
-                targetWh: wh,
-                date,
-                items: [{ itemId, itemName: item.name, qty, unit: item.unit }],
-                totalAmount: item.costPrice * qty,
-                notes: reason
-            };
+            if (editingVoucherId) {
+                const idx = appState.vouchers.findIndex(v => v.id === editingVoucherId);
+                if (idx >= 0) {
+                    appState.vouchers[idx].type = type;
+                    appState.vouchers[idx].targetWh = wh;
+                    appState.vouchers[idx].date = date;
+                    appState.vouchers[idx].items = [{ itemId, itemName: item.name, qty, unit: item.unit }];
+                    appState.vouchers[idx].totalAmount = (item.costPrice || 0) * qty;
+                    appState.vouchers[idx].notes = reason;
+                }
+                document.getElementById('wasteEditingVoucherId').value = '';
+                showToast('تم التعديل', 'تم تعديل سند الإتلاف/التسوية بنجاح');
+            } else {
+                const voucher = {
+                    id: 'V-' + Date.now(),
+                    voucherNo: (type === 'WASTE' ? 'WST-' : 'ADJ-') + Date.now().toString().substr(-6),
+                    type,
+                    targetWh: wh,
+                    date,
+                    items: [{ itemId, itemName: item.name, qty, unit: item.unit }],
+                    totalAmount: (item.costPrice || 0) * qty,
+                    notes: reason
+                };
+                appState.vouchers.push(voucher);
+                showToast('تم التسجيل', 'تم تسوية الرصيد وحفظ السند بنجاح');
+            }
 
-            appState.vouchers.push(voucher);
             saveDatabase();
-
-            showToast('تم التسجيل', 'تم تسوية الرصيد وحفظ السند بنجاح');
             document.getElementById('wasteForm').reset();
             populateWasteForm();
+        }
+
+        // ROLLBACK VOUCHER STOCK FOR EDITING
+        function rollbackVoucherStock(voucherId) {
+            const v = appState.vouchers.find(v => v.id === voucherId);
+            if (!v) return;
+
+            if (v.type === 'RECEIPT') {
+                v.items.forEach(i => {
+                    const item = appState.items.find(x => x.id === i.itemId);
+                    if (item && item.stock && item.stock[v.targetWh]) {
+                        item.stock[v.targetWh] -= i.qty;
+                        item.totalStock = Object.values(item.stock).reduce((a, b) => a + b, 0);
+                    }
+                });
+            } else if (v.type === 'PRODUCTION') {
+                const meal = appState.items.find(x => x.id === v.mealId);
+                if (meal && meal.stock && meal.stock[v.targetWh]) {
+                    meal.stock[v.targetWh] -= v.producedQty;
+                    meal.totalStock = Object.values(meal.stock).reduce((a, b) => a + b, 0);
+                }
+                const bom = appState.boms.find(b => b.mealId === v.mealId);
+                if (bom) {
+                    bom.ingredients.forEach(ing => {
+                        const raw = appState.items.find(r => r.id === ing.rawId);
+                        if (raw) {
+                            if (!raw.stock) raw.stock = {};
+                            raw.stock['wh1'] = (raw.stock['wh1'] || 0) + (ing.qty * v.producedQty);
+                            raw.totalStock = Object.values(raw.stock).reduce((a, b) => a + b, 0);
+                        }
+                    });
+                }
+            } else if (v.type === 'TRANSFER') {
+                v.items.forEach(i => {
+                    const item = appState.items.find(x => x.id === i.itemId);
+                    if (item && item.stock) {
+                        item.stock[v.sourceWh] = (item.stock[v.sourceWh] || 0) + i.qty;
+                        item.stock[v.targetWh] = (item.stock[v.targetWh] || 0) - i.qty;
+                        item.totalStock = Object.values(item.stock).reduce((a, b) => a + b, 0);
+                    }
+                });
+            } else if (v.type === 'ISSUE') {
+                v.items.forEach(i => {
+                    const item = appState.items.find(x => x.id === i.itemId);
+                    if (item && item.stock) {
+                        item.stock[v.sourceWh] = (item.stock[v.sourceWh] || 0) + i.qty;
+                        item.totalStock = Object.values(item.stock).reduce((a, b) => a + b, 0);
+                    }
+                });
+            } else if (v.type === 'WASTE' || v.type === 'ADJUSTMENT_SUB') {
+                v.items.forEach(i => {
+                    const item = appState.items.find(x => x.id === i.itemId);
+                    if (item && item.stock) {
+                        item.stock[v.targetWh] = (item.stock[v.targetWh] || 0) + i.qty;
+                        item.totalStock = Object.values(item.stock).reduce((a, b) => a + b, 0);
+                    }
+                });
+            } else if (v.type === 'ADJUSTMENT_ADD') {
+                v.items.forEach(i => {
+                    const item = appState.items.find(x => x.id === i.itemId);
+                    if (item && item.stock) {
+                        item.stock[v.targetWh] = (item.stock[v.targetWh] || 0) - i.qty;
+                        item.totalStock = Object.values(item.stock).reduce((a, b) => a + b, 0);
+                    }
+                });
+            }
+        }
+
+        // EDIT HISTORICAL VOUCHER
+        function editVoucher(voucherId) {
+            const v = appState.vouchers.find(v => v.id === voucherId);
+            if (!v) return;
+
+            if (v.type === 'RECEIPT') {
+                switchTab('receipt');
+                document.getElementById('rcptEditingVoucherId').value = v.id;
+                document.getElementById('rcptSupplier').value = v.supplier || '';
+                document.getElementById('rcptTargetWarehouse').value = v.targetWh || 'wh1';
+                document.getElementById('rcptDate').value = v.date;
+                document.getElementById('rcptNotes').value = v.notes || '';
+
+                const container = document.getElementById('receiptRowsContainer');
+                container.innerHTML = '';
+                if (v.items && v.items.length > 0) {
+                    v.items.forEach(i => addReceiptRow(i.itemId, i.qty, i.price));
+                } else {
+                    addReceiptRow();
+                }
+            } else if (v.type === 'PRODUCTION') {
+                switchTab('production');
+                document.getElementById('editingVoucherId').value = v.id;
+                document.getElementById('prodMealSelect').value = v.mealId;
+                document.getElementById('prodQuantity').value = v.producedQty;
+                document.getElementById('prodTargetWarehouse').value = v.targetWh || 'wh3';
+                calculateProductionRequirements();
+            } else if (v.type === 'TRANSFER') {
+                switchTab('transfer');
+                document.getElementById('trfEditingVoucherId').value = v.id;
+                document.getElementById('trfSourceWh').value = v.sourceWh;
+                document.getElementById('trfTargetWh').value = v.targetWh;
+                document.getElementById('trfDate').value = v.date;
+                document.getElementById('trfNotes').value = v.notes || '';
+                populateTransferItems();
+                if (v.items && v.items[0]) {
+                    document.getElementById('trfItemSelect').value = v.items[0].itemId;
+                    document.getElementById('trfQty').value = v.items[0].qty;
+                }
+            } else if (v.type === 'ISSUE') {
+                switchTab('issue');
+                document.getElementById('issueEditingVoucherId').value = v.id;
+                document.getElementById('issueEntity').value = v.entity || '';
+                document.getElementById('issueSourceWh').value = v.sourceWh;
+                document.getElementById('issueDate').value = v.date;
+                document.getElementById('issueNotes').value = v.notes || '';
+                populateIssueItems();
+                if (v.items && v.items[0]) {
+                    document.getElementById('issueItemSelect').value = v.items[0].itemId;
+                    document.getElementById('issueQty').value = v.items[0].qty;
+                }
+            } else if (v.type === 'WASTE' || v.type.startsWith('ADJUSTMENT')) {
+                switchTab('waste');
+                document.getElementById('wasteEditingVoucherId').value = v.id;
+                document.getElementById('wasteType').value = v.type;
+                document.getElementById('wasteWh').value = v.targetWh;
+                document.getElementById('wasteDate').value = v.date;
+                document.getElementById('wasteReason').value = v.notes || '';
+                populateWasteItems();
+                if (v.items && v.items[0]) {
+                    document.getElementById('wasteItemSelect').value = v.items[0].itemId;
+                    document.getElementById('wasteQty').value = v.items[0].qty;
+                }
+            }
         }
 
         function initLedgerView() {
@@ -1974,17 +2327,15 @@
 
             if (!item) return;
 
-            // Display Header
             const infoBox = document.getElementById('ledgerItemInfo');
             infoBox.classList.remove('hidden');
             document.getElementById('ldgCode').innerText = item.code;
             document.getElementById('ldgName').innerText = item.name;
             document.getElementById('ldgUnit').innerText = item.unit;
-            document.getElementById('ldgCurrentStock').innerText = (item.totalStock || 0) + ' ' + item.unit;
+            document.getElementById('ldgCurrentStock').innerText = toEnglishDigits(item.totalStock || 0) + ' ' + item.unit;
 
-            // Compute ledger rows chronologically
             const history = [];
-            
+
             appState.vouchers.forEach(v => {
                 let qtyIn = 0;
                 let qtyOut = 0;
@@ -2044,15 +2395,16 @@
 
             tbody.innerHTML = rowsWithBalance.reverse().map(row => `
                 <tr class="hover:bg-slate-50 border-b border-slate-100">
-                    <td class="p-3 font-mono font-semibold text-slate-600">${row.date}</td>
+                    <td class="p-3 font-mono font-semibold text-slate-600">${toEnglishDigits(row.date)}</td>
                     <td class="p-3">${getVoucherTypeBadge(row.type)}</td>
                     <td class="p-3 font-mono font-bold text-slate-700">${row.voucherNo}</td>
                     <td class="p-3 font-semibold text-slate-600">${row.source}</td>
-                    <td class="p-3 font-bold text-emerald-600 font-mono">${row.qtyIn > 0 ? '+' + row.qtyIn : '-'}</td>
-                    <td class="p-3 font-bold text-rose-600 font-mono">${row.qtyOut > 0 ? '-' + row.qtyOut : '-'}</td>
-                    <td class="p-3 font-black text-indigo-900 font-mono text-sm bg-indigo-50/50">${row.balance} ${item.unit}</td>
-                    <td class="p-3 text-center">
+                    <td class="p-3 font-bold text-emerald-600 font-mono">${row.qtyIn > 0 ? '+' + toEnglishDigits(row.qtyIn) : '-'}</td>
+                    <td class="p-3 font-bold text-rose-600 font-mono">${row.qtyOut > 0 ? '-' + toEnglishDigits(row.qtyOut) : '-'}</td>
+                    <td class="p-3 font-black text-indigo-900 font-mono text-sm bg-indigo-50/50">${toEnglishDigits(row.balance)} ${item.unit}</td>
+                    <td class="p-3 text-center flex justify-center gap-1">
                         <button onclick="previewVoucherModal('${row.voucherId}')" class="text-indigo-600 hover:text-indigo-800 font-bold bg-indigo-50 px-2 py-0.5 rounded">عرض</button>
+                        <button onclick="editVoucher('${row.voucherId}')" class="text-amber-600 hover:text-amber-800 font-bold bg-amber-50 px-2 py-0.5 rounded">تعديل</button>
                     </td>
                 </tr>
             `).join('');
@@ -2075,7 +2427,7 @@
                         <div class="inline-block bg-choco-900 text-amber-200 font-bold px-3 py-1 text-sm rounded mb-1 font-mono">
                             ${v.voucherNo}
                         </div>
-                        <p class="text-xs text-slate-500 font-mono">التاريخ: ${v.date}</p>
+                        <p class="text-xs text-slate-500 font-mono">التاريخ: ${toEnglishDigits(v.date)}</p>
                     </div>
                 </div>
 
@@ -2104,18 +2456,18 @@
                         ${v.items ? v.items.map(i => `
                             <tr>
                                 <td class="p-2.5 font-bold">${i.itemName || v.mealName}</td>
-                                <td class="p-2.5 text-center font-mono font-bold">${i.qty || v.producedQty}</td>
+                                <td class="p-2.5 text-center font-mono font-bold">${toEnglishDigits(i.qty || v.producedQty)}</td>
                                 <td class="p-2.5 text-center">${i.unit || 'علبة'}</td>
-                                <td class="p-2.5 text-center font-mono">${(i.price || 0).toFixed(3)}</td>
-                                <td class="p-2.5 text-center font-mono font-bold">${(i.total || v.totalAmount || 0).toFixed(3)}</td>
+                                <td class="p-2.5 text-center font-mono">${toEnglishDigits((i.price || 0).toFixed(3))}</td>
+                                <td class="p-2.5 text-center font-mono font-bold">${toEnglishDigits((i.total || v.totalAmount || 0).toFixed(3))}</td>
                             </tr>
                         `).join('') : `
                             <tr>
                                 <td class="p-2.5 font-bold">${v.mealName}</td>
-                                <td class="p-2.5 text-center font-mono font-bold">${v.producedQty}</td>
+                                <td class="p-2.5 text-center font-mono font-bold">${toEnglishDigits(v.producedQty)}</td>
                                 <td class="p-2.5 text-center">علبة</td>
                                 <td class="p-2.5 text-center font-mono">--</td>
-                                <td class="p-2.5 text-center font-mono font-bold">${(v.totalAmount || 0).toFixed(3)}</td>
+                                <td class="p-2.5 text-center font-mono font-bold">${toEnglishDigits((v.totalAmount || 0).toFixed(3))}</td>
                             </tr>
                         `}
                     </tbody>
@@ -2123,7 +2475,7 @@
 
                 <div class="flex justify-between items-center bg-slate-100 p-3 rounded-xl border border-slate-200 text-xs font-bold">
                     <span>القيمة الإجمالية للسند:</span>
-                    <span class="text-base text-choco-900 font-black font-mono">${(v.totalAmount || 0).toFixed(3)} د.ك</span>
+                    <span class="text-base text-choco-900 font-black font-mono">${toEnglishDigits((v.totalAmount || 0).toFixed(3))} د.ك</span>
                 </div>
 
                 <div class="pt-8 grid grid-cols-3 gap-4 text-center text-xs font-bold text-slate-600">
@@ -2186,11 +2538,25 @@
             }, 3500);
         }
 
+        // Live Clock & Date displaying Strictly ASCII English Digits
         function setupClock() {
             const update = () => {
                 const now = new Date();
-                document.getElementById('liveClock').innerText = now.toLocaleTimeString('ar-KW');
-                document.getElementById('liveDate').innerText = now.toLocaleDateString('ar-KW', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                const hours = String(now.getHours() % 12 || 12).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const seconds = String(now.getSeconds()).padStart(2, '0');
+                const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
+                
+                document.getElementById('liveClock').innerText = `${hours}:${minutes}:${seconds} ${ampm}`;
+
+                const days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+                const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+                const dayName = days[now.getDay()];
+                const dayNum = now.getDate();
+                const monthName = months[now.getMonth()];
+                const yearNum = now.getFullYear();
+
+                document.getElementById('liveDate').innerText = `${dayName}، ${dayNum} ${monthName} ${yearNum}`;
             };
             update();
             setInterval(update, 1000);
